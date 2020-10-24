@@ -29,5 +29,7 @@ func GetConn(dbname string) (*mongo.Database, error) {
 		log.Fatal(err)
 		return nil, err
 	}
+	log.Printf("Mongodb connected")
+
 	return client.Database(dbname), nil
 }

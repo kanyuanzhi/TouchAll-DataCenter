@@ -17,18 +17,18 @@ type WsClients struct {
 	Register   chan *websocket.Conn
 	Unregister chan *websocket.Conn
 
-	requestForPeople chan *models.WsRequestForPeople
-	requestForPerson chan *models.WsRequestForPerson
+	requestForPeople          chan *models.WsRequestForPeople
+	requestForPerson          chan *models.WsRequestForPerson
+	requestForEquipmentStatus chan *models.WsRequestForEquipmentStatus
 
-	peopleMembers      map[int]map[*websocket.Conn]bool
-	personMembers      map[string]map[*websocket.Conn]bool
-	environmentMembers map[int]map[*websocket.Conn]bool
-	equipmentMembers   map[int]map[*websocket.Conn]bool
+	peopleMembers          map[int]map[*websocket.Conn]bool
+	personMembers          map[string]map[*websocket.Conn]bool
+	environmentMembers     map[int]map[*websocket.Conn]bool
+	equipmentStatusMembers map[int]map[*websocket.Conn]bool
 
-	PeopleBroadcast      chan *models.PeopleAwareness
-	PersonBroadcast      chan []*models.PersonAwareness
-	environmentBroadcast chan map[int][]byte
-	equipmentBroadcast   chan map[int][]byte
+	PeopleBroadcast          chan *models.PeopleAwareness
+	PersonBroadcast          chan []*models.PersonAwareness
+	EquipmentStatusBroadcast chan *models.EquipmentsStatusAwareness
 }
 
 func NewWsClients() *WsClients {
@@ -37,18 +37,18 @@ func NewWsClients() *WsClients {
 		Register:   make(chan *websocket.Conn),
 		Unregister: make(chan *websocket.Conn),
 
-		requestForPeople: make(chan *models.WsRequestForPeople),
-		requestForPerson: make(chan *models.WsRequestForPerson),
+		requestForPeople:          make(chan *models.WsRequestForPeople),
+		requestForPerson:          make(chan *models.WsRequestForPerson),
+		requestForEquipmentStatus: make(chan *models.WsRequestForEquipmentStatus),
 
-		peopleMembers:      make(map[int]map[*websocket.Conn]bool),
-		personMembers:      make(map[string]map[*websocket.Conn]bool),
-		environmentMembers: make(map[int]map[*websocket.Conn]bool),
-		equipmentMembers:   make(map[int]map[*websocket.Conn]bool),
+		peopleMembers:          make(map[int]map[*websocket.Conn]bool),
+		personMembers:          make(map[string]map[*websocket.Conn]bool),
+		environmentMembers:     make(map[int]map[*websocket.Conn]bool),
+		equipmentStatusMembers: make(map[int]map[*websocket.Conn]bool),
 
-		PeopleBroadcast:      make(chan *models.PeopleAwareness),
-		PersonBroadcast:      make(chan []*models.PersonAwareness),
-		environmentBroadcast: make(chan map[int][]byte),
-		equipmentBroadcast:   make(chan map[int][]byte),
+		PeopleBroadcast:          make(chan *models.PeopleAwareness),
+		PersonBroadcast:          make(chan []*models.PersonAwareness),
+		EquipmentStatusBroadcast: make(chan *models.EquipmentsStatusAwareness),
 	}
 }
 
@@ -62,6 +62,7 @@ func (wsClients *WsClients) Start() {
 				wsClients.members[member] = false
 				member.Close()
 			}
+
 		case wsRequest := <-wsClients.requestForPeople:
 			if _, has := wsClients.peopleMembers[wsRequest.Camera]; !has {
 				wsClients.peopleMembers[wsRequest.Camera] = make(map[*websocket.Conn]bool)
@@ -72,6 +73,12 @@ func (wsClients *WsClients) Start() {
 				wsClients.personMembers[wsRequest.Name] = make(map[*websocket.Conn]bool)
 			}
 			wsClients.personMembers[wsRequest.Name][wsRequest.Conn] = true
+		case wsRequest := <-wsClients.requestForEquipmentStatus:
+			if _, has := wsClients.equipmentStatusMembers[wsRequest.EquipmentID]; !has {
+				wsClients.equipmentStatusMembers[wsRequest.EquipmentID] = make(map[*websocket.Conn]bool)
+			}
+			wsClients.equipmentStatusMembers[wsRequest.EquipmentID][wsRequest.Conn] = true
+
 		case message := <-wsClients.PeopleBroadcast:
 			if members, has := wsClients.peopleMembers[message.Camera]; has {
 				data, _ := json.Marshal(message)
@@ -102,6 +109,21 @@ func (wsClients *WsClients) Start() {
 							}
 						}(member)
 					}
+				}
+			}
+		case message := <-wsClients.EquipmentStatusBroadcast:
+			if members, has := wsClients.equipmentStatusMembers[message.EquipmentID]; has {
+				data, _ := json.Marshal(message)
+				for member := range members {
+					go func(member *websocket.Conn) {
+						err := member.WriteMessage(websocket.TextMessage, data)
+						if err != nil {
+							log.Printf("write errro: %s", err)
+							member.Close()
+							delete(members, member)
+							delete(wsClients.members, member)
+						}
+					}(member)
 				}
 			}
 		}

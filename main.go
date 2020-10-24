@@ -13,7 +13,10 @@ func main() {
 	wsServer := websocket.NewWsServer(wsClients)
 	go wsServer.Start()
 
-	socketServer := socket.NewSocketServer(wsClients)
+	socketClients := socket.NewSocketClients()
+	go socketClients.Status()
+
+	socketServer := socket.NewSocketServer(wsClients, socketClients)
 	go socketServer.Start()
 
 	for {

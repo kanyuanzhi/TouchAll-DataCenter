@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"dataCenter/models"
+	"dataCenter/utils"
 	"encoding/json"
 	"flag"
 	"github.com/gorilla/websocket"
@@ -31,9 +32,11 @@ func NewWsServer(wsClients *WsClients) *WsServer {
 }
 
 func (ws *WsServer) Start() {
-	addr := flag.String("addr", "localhost:9091", "http service address")
+	config := utils.NewConfig()
+	port := config.GetWebSocketConfig().(string)
+	addr := flag.String("addr", ":"+port, "http service address")
 	http.HandleFunc("/ws", ws.serveWs)
-	log.Printf("start WsServer on port 9091")
+	log.Printf("Start WsServer on port %s", port)
 	http.ListenAndServe(*addr, nil)
 }
 
@@ -62,15 +65,20 @@ func (ws *WsServer) serveWs(w http.ResponseWriter, r *http.Request) {
 
 	switch int(m["request_type"].(float64)) {
 	case 10:
-		var requestForPeople models.WsRequestForPeople
-		json.Unmarshal(message, &requestForPeople)
+		requestForPeople := new(models.WsRequestForPeople)
+		json.Unmarshal(message, requestForPeople)
 		requestForPeople.Conn = conn
-		ws.wsClients.requestForPeople <- &requestForPeople
+		ws.wsClients.requestForPeople <- requestForPeople
 	case 11:
-		var requestForPerson models.WsRequestForPerson
-		json.Unmarshal(message, &requestForPerson)
+		requestForPerson := new(models.WsRequestForPerson)
+		json.Unmarshal(message, requestForPerson)
 		requestForPerson.Conn = conn
-		ws.wsClients.requestForPerson <- &requestForPerson
+		ws.wsClients.requestForPerson <- requestForPerson
+	case 31:
+		requestForEquipmentStatus := new(models.WsRequestForEquipmentStatus)
+		json.Unmarshal(message, requestForEquipmentStatus)
+		requestForEquipmentStatus.Conn = conn
+		ws.wsClients.requestForEquipmentStatus <- requestForEquipmentStatus
 	default:
 		break
 	}

@@ -16,26 +16,30 @@ import (
 
 // 接口服务器
 type SocketServer struct {
-	wsClients  *websocket.WsClients
-	useMongodb bool
-	mongoConn  *mongo.Database
+	wsClients     *websocket.WsClients
+	useMongodb    bool
+	mongoConn     *mongo.Database
+	socketClients *SocketClients
 }
 
-func NewSocketServer(wsClients *websocket.WsClients) *SocketServer {
+func NewSocketServer(wsClients *websocket.WsClients, socketClients *SocketClients) *SocketServer {
 	config := utils.NewConfig()
 	useMongodb := config.GetValue("mongodb.use").(bool)
 	return &SocketServer{
-		wsClients:  wsClients,
-		useMongodb: useMongodb,
-		mongoConn:  nil,
+		wsClients:     wsClients,
+		useMongodb:    useMongodb,
+		mongoConn:     nil,
+		socketClients: socketClients,
 	}
 }
 
 func (socketServer *SocketServer) Start() {
-	l, err := net.Listen("tcp", ":9090")
-	log.Printf("start SocketServer on port 9090")
+	config := utils.NewConfig()
+	port := config.GetSocketConfig().(string)
+	l, err := net.Listen("tcp", ":"+port)
+	log.Printf("Start SocketServer on port %s", port)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -51,16 +55,21 @@ func (socketServer *SocketServer) Start() {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			fmt.Println(err)
-			break
+			log.Println(err)
+			return
 		}
+		socketServer.socketClients.members[&conn] = true
 		go socketServer.handleConn(conn)
 	}
 }
 
 // 处理socket连接，完成数据解包
 func (socketServer *SocketServer) handleConn(conn net.Conn) {
-	defer conn.Close()
+	defer func() {
+		conn.Close()
+		delete(socketServer.socketClients.members, &conn)
+	}()
+
 	tempBuffer := make([]byte, 0)
 	readerChannel := make(chan []byte, 16)
 	go socketServer.reader(readerChannel)
@@ -85,8 +94,8 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte) {
 			switch int(m["data_type"].(float64)) {
 			case 10:
 				// PeopleAwareness
-				var peopleAwareness models.PeopleAwareness
-				json.Unmarshal(data, &peopleAwareness)
+				peopleAwareness := new(models.PeopleAwareness)
+				json.Unmarshal(data, peopleAwareness)
 				personAwarenessData := peopleAwareness.PersonAwarenessData
 
 				go func(personAwarenessData []*models.PersonAwareness) {
@@ -101,9 +110,9 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte) {
 					}
 				}(personAwarenessData)
 
-				go func(peopleAwareness models.PeopleAwareness) {
+				go func(peopleAwareness *models.PeopleAwareness) {
 					// 通过websocket推送至前端网页
-					socketServer.wsClients.PeopleBroadcast <- &peopleAwareness
+					socketServer.wsClients.PeopleBroadcast <- peopleAwareness
 					socketServer.wsClients.PersonBroadcast <- peopleAwareness.PersonAwarenessData
 				}(peopleAwareness)
 			case 11:
@@ -114,10 +123,22 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte) {
 				continue
 			case 30:
 				// EquipmentBasicInformationAwareness，不做推送，只更新数据库
-				continue
+				equipmentBasicInformationAwareness := new(models.EquipmentBasicInformationAwareness)
+				json.Unmarshal(data, equipmentBasicInformationAwareness)
 			case 31:
 				// EquipmentStatusAwareness
-				continue
+				equipmentStatusAwareness := new(models.EquipmentsStatusAwareness)
+				json.Unmarshal(data, equipmentStatusAwareness)
+
+				go func(equipmentStatusAwareness *models.EquipmentsStatusAwareness) {
+					if socketServer.useMongodb == true {
+						mongoUtils.InsertOneRecord(equipmentStatusAwareness, socketServer.mongoConn.Collection("equipment_awareness"))
+					}
+				}(equipmentStatusAwareness)
+
+				go func(equipmentStatusAwareness *models.EquipmentsStatusAwareness) {
+					socketServer.wsClients.EquipmentStatusBroadcast <- equipmentStatusAwareness
+				}(equipmentStatusAwareness)
 			}
 		}
 	}

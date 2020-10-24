@@ -35,3 +35,13 @@ func (config *Config) GetMongodbConfig() (interface{}, interface{}, interface{},
 	port := config.GetValue("mongodb.port")
 	return username, password, host, port
 }
+
+func (config *Config) GetSocketConfig() interface{} {
+	port := config.GetValue("socket_server.port")
+	return port
+}
+
+func (config *Config) GetWebSocketConfig() interface{} {
+	port := config.GetValue("websocket_server.port")
+	return port
+}

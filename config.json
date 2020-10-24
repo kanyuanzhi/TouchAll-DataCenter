@@ -1,10 +1,8 @@
 {
-  "socketserver": {
-    "host": "localhost",
+  "socket_server": {
     "port": "9090"
   },
-  "websocketserver": {
-    "host": "localhost",
+  "websocket_server": {
     "port": "9091"
   },
   "mongodb": {

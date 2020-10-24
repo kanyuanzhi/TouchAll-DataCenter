@@ -23,3 +23,8 @@ type WsRequestForPerson struct {
 	WsRequest
 	Name string `json:"name" bson:"name"`
 }
+
+type WsRequestForEquipmentStatus struct {
+	WsRequest
+	EquipmentID int `json:"equipment_id" bson:"equipment_id"`
+}
