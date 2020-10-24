@@ -1,0 +1,17 @@
+{
+  "socketserver": {
+    "host": "localhost",
+    "port": "9090"
+  },
+  "websocketserver": {
+    "host": "localhost",
+    "port": "9091"
+  },
+  "mongodb": {
+    "host": "10.211.55.9",
+    "port": "27017",
+    "username": "root",
+    "password": "root",
+    "use": false
+  }
+}

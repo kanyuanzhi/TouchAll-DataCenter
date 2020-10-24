@@ -1,17 +1,19 @@
 package main
 
 import (
+	"dataCenter/socket"
+	"dataCenter/websocket"
 	"time"
 )
 
 func main() {
-	wsClients := NewWsClients()
+	wsClients := websocket.NewWsClients()
 	go wsClients.Start()
 
-	wsServer := NewWsServer(wsClients)
+	wsServer := websocket.NewWsServer(wsClients)
 	go wsServer.Start()
 
-	socketServer := NewSocketServer(wsClients)
+	socketServer := socket.NewSocketServer(wsClients)
 	go socketServer.Start()
 
 	for {
