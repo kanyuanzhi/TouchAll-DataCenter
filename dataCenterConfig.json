@@ -10,6 +10,15 @@
     "port": "27017",
     "username": "root",
     "password": "root",
+    "database": "awareness",
+    "use": false
+  },
+  "mysql": {
+    "host": "10.211.55.9",
+    "port": "3306",
+    "username": "root",
+    "password": "123456",
+    "database": "awareness",
     "use": false
   }
 }

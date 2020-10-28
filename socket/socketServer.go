@@ -5,10 +5,10 @@ import (
 	"dataCenter/models"
 	"dataCenter/protocal"
 	"dataCenter/utils"
-	"dataCenter/utils/mongoUtils"
 	"dataCenter/websocket"
 	"encoding/json"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"net"
@@ -17,18 +17,23 @@ import (
 // 接口服务器
 type SocketServer struct {
 	wsClients     *websocket.WsClients
-	useMongodb    bool
 	mongoConn     *mongo.Database
+	useMongodb    bool
+	mysqlConn     *sqlx.DB
+	useMysql      bool
 	socketClients *SocketClients
 }
 
 func NewSocketServer(wsClients *websocket.WsClients, socketClients *SocketClients) *SocketServer {
 	config := utils.NewConfig()
 	useMongodb := config.GetValue("mongodb.use").(bool)
+	useMysql := config.GetValue("mysql.use").(bool)
 	return &SocketServer{
 		wsClients:     wsClients,
-		useMongodb:    useMongodb,
 		mongoConn:     nil,
+		useMongodb:    useMongodb,
+		mysqlConn:     nil,
+		useMysql:      useMysql,
 		socketClients: socketClients,
 	}
 }
@@ -43,14 +48,15 @@ func (socketServer *SocketServer) Start() {
 		return
 	}
 
-	var mongoConn *mongo.Database
 	if socketServer.useMongodb {
-		mongoConn, err = dbDrivers.GetConn("awareness")
-		socketServer.mongoConn = mongoConn
+		socketServer.mongoConn = dbDrivers.GetMongodbConn()
 		if err != nil {
 			log.Println(err)
 			return
 		}
+	}
+	if socketServer.useMysql {
+		socketServer.mysqlConn = dbDrivers.GetMysqlConn()
 	}
 	for {
 		conn, err := l.Accept()
@@ -94,8 +100,8 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte) {
 			switch int(m["data_type"].(float64)) {
 			case 10:
 				// PeopleAwareness
-				peopleAwareness := new(models.PeopleAwareness)
-				json.Unmarshal(data, peopleAwareness)
+				var peopleAwareness models.PeopleAwareness
+				json.Unmarshal(data, &peopleAwareness)
 				personAwarenessData := peopleAwareness.PersonAwarenessData
 
 				go func(personAwarenessData []*models.PersonAwareness) {
@@ -106,7 +112,7 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte) {
 						for i := 0; i < len(personAwarenessData); i++ {
 							documents = append(documents, personAwarenessData[i])
 						}
-						mongoUtils.InsertManyRecords(documents, socketServer.mongoConn.Collection("person_awareness"))
+						utils.InsertManyRecords(documents, socketServer.mongoConn.Collection("person_awareness"))
 					}
 				}(personAwarenessData)
 
@@ -114,7 +120,7 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte) {
 					// 通过websocket推送至前端网页
 					socketServer.wsClients.PeopleBroadcast <- peopleAwareness
 					socketServer.wsClients.PersonBroadcast <- peopleAwareness.PersonAwarenessData
-				}(peopleAwareness)
+				}(&peopleAwareness)
 			case 11:
 				// PersonAwareness，在PeopleAwareness中已处理
 				continue
@@ -123,22 +129,28 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte) {
 				continue
 			case 30:
 				// EquipmentBasicInformationAwareness，不做推送，只更新数据库
-				equipmentBasicInformationAwareness := new(models.EquipmentBasicInformationAwareness)
-				json.Unmarshal(data, equipmentBasicInformationAwareness)
+				if socketServer.useMysql == true {
+					var equipmentBasicInformationAwareness models.EquipmentBasicInformationAwareness
+					json.Unmarshal(data, &equipmentBasicInformationAwareness)
+					go func(equipmentBasicInformationAwareness *models.EquipmentBasicInformationAwareness) {
+						utils.InsertEquipmentBasicInformation(equipmentBasicInformationAwareness, socketServer.mysqlConn)
+					}(&equipmentBasicInformationAwareness)
+				}
 			case 31:
 				// EquipmentStatusAwareness
-				equipmentStatusAwareness := new(models.EquipmentsStatusAwareness)
-				json.Unmarshal(data, equipmentStatusAwareness)
+				var equipmentStatusAwareness models.EquipmentsStatusAwareness
+				json.Unmarshal(data, &equipmentStatusAwareness)
+				//log.Println(equipmentStatusAwareness)
 
 				go func(equipmentStatusAwareness *models.EquipmentsStatusAwareness) {
 					if socketServer.useMongodb == true {
-						mongoUtils.InsertOneRecord(equipmentStatusAwareness, socketServer.mongoConn.Collection("equipment_awareness"))
+						utils.InsertOneRecord(equipmentStatusAwareness, socketServer.mongoConn.Collection("equipment_awareness"))
 					}
-				}(equipmentStatusAwareness)
+				}(&equipmentStatusAwareness)
 
 				go func(equipmentStatusAwareness *models.EquipmentsStatusAwareness) {
 					socketServer.wsClients.EquipmentStatusBroadcast <- equipmentStatusAwareness
-				}(equipmentStatusAwareness)
+				}(&equipmentStatusAwareness)
 			}
 		}
 	}

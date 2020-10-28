@@ -1,0 +1,6 @@
+mongodb:
+docker run --name mongodb -v /home/kan/mongodb/data/:/data/db -v /home/kan/mongodb/conf:/data/configdb -p 27017:27017 -d -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=root mongo
+
+mysql:
+docker run --name mysql -v /home/kan/mysql/data:/var/lib/mysql -v /home/kan/mysql/config:/etc/mysql/ -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 -d mysql
+

@@ -65,20 +65,25 @@ func (ws *WsServer) serveWs(w http.ResponseWriter, r *http.Request) {
 
 	switch int(m["request_type"].(float64)) {
 	case 10:
-		requestForPeople := new(models.WsRequestForPeople)
-		json.Unmarshal(message, requestForPeople)
+		var requestForPeople models.WsRequestForPeople
+		json.Unmarshal(message, &requestForPeople)
 		requestForPeople.Conn = conn
-		ws.wsClients.requestForPeople <- requestForPeople
+		ws.wsClients.requestForPeople <- &requestForPeople
 	case 11:
-		requestForPerson := new(models.WsRequestForPerson)
-		json.Unmarshal(message, requestForPerson)
+		var requestForPerson models.WsRequestForPerson
+		json.Unmarshal(message, &requestForPerson)
 		requestForPerson.Conn = conn
-		ws.wsClients.requestForPerson <- requestForPerson
+		ws.wsClients.requestForPerson <- &requestForPerson
 	case 31:
-		requestForEquipmentStatus := new(models.WsRequestForEquipmentStatus)
-		json.Unmarshal(message, requestForEquipmentStatus)
+		var requestForEquipmentStatus models.WsRequestForEquipmentStatus
+		json.Unmarshal(message, &requestForEquipmentStatus)
 		requestForEquipmentStatus.Conn = conn
-		ws.wsClients.requestForEquipmentStatus <- requestForEquipmentStatus
+		ws.wsClients.requestForEquipmentStatus <- &requestForEquipmentStatus
+	case 33: // 暂时不用
+		var requestForEquipmentGroupStatus models.WsRequestForEquipmentGroupStatus
+		json.Unmarshal(message, &requestForEquipmentGroupStatus)
+		requestForEquipmentGroupStatus.Conn = conn
+		ws.wsClients.requestForEquipmentGroupStatus <- &requestForEquipmentGroupStatus
 	default:
 		break
 	}

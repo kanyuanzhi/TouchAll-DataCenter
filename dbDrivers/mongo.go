@@ -11,25 +11,25 @@ import (
 	"time"
 )
 
-func GetConn(dbname string) (*mongo.Database, error) {
+func GetMongodbConn() *mongo.Database {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	config := utils.NewConfig()
-	username, password, host, port := config.GetMongodbConfig()
+	username, password, host, port, database := config.GetMongodbConfig()
 	url := fmt.Sprintf("mongodb://%s:%s@%s:%s", username, password, host, port)
 	opt := options.Client().ApplyURI(url)
 	opt.SetMaxPoolSize(50)
 	client, err := mongo.Connect(ctx, opt)
 	if err != nil {
-		log.Fatal(err)
-		return nil, err
+		log.Fatal("Mongodb connection failed" + err.Error())
 	}
-	if err = client.Ping(context.Background(), readpref.Primary()); err != nil {
-		log.Fatal(err)
-		return nil, err
-	}
-	log.Printf("Mongodb connected")
 
-	return client.Database(dbname), nil
+	if err = client.Ping(context.Background(), readpref.Primary()); err != nil {
+		log.Fatal("Mongodb connection failed" + err.Error())
+	}
+
+	log.Printf("Mongodb connection successed")
+
+	return client.Database(database.(string))
 }

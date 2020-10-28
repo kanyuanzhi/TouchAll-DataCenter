@@ -2,13 +2,6 @@ package models
 
 import "github.com/gorilla/websocket"
 
-// RequestType:
-// 10: PeopleAwareness
-// 11: PersonAwareness
-// 20: EnvironmentAwareness
-// 30: EquipmentBasicInformationAwareness
-// 31: EquipmentStatusAwareness
-
 type WsRequest struct {
 	RequestType int             `json:"request_type" bson:"request_type"`
 	Conn        *websocket.Conn `json:"conn" bson:"conn"`
@@ -27,4 +20,9 @@ type WsRequestForPerson struct {
 type WsRequestForEquipmentStatus struct {
 	WsRequest
 	EquipmentID int `json:"equipment_id" bson:"equipment_id"`
+}
+
+type WsRequestForEquipmentGroupStatus struct {
+	WsRequest
+	EquipmentIDs []int `json:"equipment_ids" bson:"equipment_ids"`
 }

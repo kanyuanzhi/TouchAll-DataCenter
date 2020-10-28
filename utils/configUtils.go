@@ -11,7 +11,7 @@ type Config struct {
 
 func NewConfig() *Config {
 	cviper := viper.New()
-	cviper.SetConfigName("config")
+	cviper.SetConfigName("dataCenterConfig")
 	cviper.AddConfigPath("./")
 	cviper.SetConfigType("json")
 	err := cviper.ReadInConfig()
@@ -28,12 +28,22 @@ func (config *Config) GetValue(key string) interface{} {
 	return value
 }
 
-func (config *Config) GetMongodbConfig() (interface{}, interface{}, interface{}, interface{}) {
+func (config *Config) GetMongodbConfig() (interface{}, interface{}, interface{}, interface{}, interface{}) {
 	username := config.GetValue("mongodb.username")
 	password := config.GetValue("mongodb.password")
 	host := config.GetValue("mongodb.host")
 	port := config.GetValue("mongodb.port")
-	return username, password, host, port
+	database := config.GetValue("mongodb.database")
+	return username, password, host, port, database
+}
+
+func (config *Config) GetMysqlConfig() (interface{}, interface{}, interface{}, interface{}, interface{}) {
+	username := config.GetValue("mysql.username")
+	password := config.GetValue("mysql.password")
+	host := config.GetValue("mysql.host")
+	port := config.GetValue("mysql.port")
+	database := config.GetValue("mysql.database")
+	return username, password, host, port, database
 }
 
 func (config *Config) GetSocketConfig() interface{} {

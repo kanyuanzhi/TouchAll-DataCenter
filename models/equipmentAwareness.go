@@ -1,58 +1,90 @@
 package models
 
-// DataType:
-// 10: PeopleAwareness
-// 11: PersonAwareness
-// 20: EnvironmentAwareness
-// 30: EquipmentBasicInformationAwareness
-// 31: EquipmentStatusAwareness
+type EquipmentBasicInformationAwarenessMysql struct {
+	DataType            int     `json:"data_type" db:"data_type"`
+	EquipmentID         int     `json:"equipment_id" db:"equipment_id"`
+	OperateSystem       string  `json:"operate_system" db:"operate_system"`
+	NetworkName         string  `json:"network_name" db:"network_name"`
+	Platform            string  `json:"platform" db:"platform"`
+	Architecture        string  `json:"architecture" db:"architecture"`
+	BootTimeInTimestamp int64   `json:"boot_time_in_timestamp" db:"boot_time_in_timestamp"`
+	BootTimeInString    string  `json:"boot_time_in_string" db:"boot_time_in_string"`
+	User                string  `json:"user" db:"user"`
+	Host                string  `json:"host" db:"host"`
+	UpdateTime          int64   `json:"update_time" db:"update_time"`
+	CPUCount            int     `json:"cpu_count" db:"cpu_count"`
+	DiskSize            float32 `json:"disk_size" db:"disk_size"`
+	MemorySize          float32 `json:"memory_size" db:"memory_size"`
+	NetworkMac          string  `json:"network_mac" db:"network_mac"`
+	NetworkIP           string  `json:"network_ip" db:"network_ip"`
+}
 
 type EquipmentBasicInformationAwareness struct {
-	DataType            int                      `json:"data_type"`
-	EquipmentID         int                      `json:"equipment_id"`
-	NetworkMac          string                   `json:"network_mac"`
-	OperateSystem       string                   `json:"operate_system"`
-	NetworkName         string                   `json:"network_name"`
-	Platform            string                   `json:"platform"`
-	Architecture        string                   `json:"architecture"`
-	BootTimeInTimestamp int64                    `json:"boot_time_in_timestamp"`
-	BootTimeInString    string                   `json:"boot_time_in_string"`
-	User                string                   `json:"user"`
-	Host                string                   `json:"host"`
-	UpdateTime          int64                    `json:"update_time"`
-	CPU                 *CPUBasicInformation     `json:"cpu"`
-	Memory              *DiskBasicInformation    `json:"memory"`
-	Disk                *MemoryBasicInformation  `json:"disk"`
-	Network             *NetworkBasicInformation `json:"network"`
+	DataType            int                     `json:"data_type" db:"data_type"`
+	EquipmentID         int                     `json:"equipment_id" db:"equipment_id"`
+	OperateSystem       string                  `json:"operate_system" db:"operate_system"`
+	NetworkName         string                  `json:"network_name" db:"network_name"`
+	Platform            string                  `json:"platform" db:"platform"`
+	Architecture        string                  `json:"architecture" db:"architecture"`
+	BootTimeInTimestamp int64                   `json:"boot_time_in_timestamp" db:"boot_time_in_timestamp"`
+	BootTimeInString    string                  `json:"boot_time_in_string" db:"boot_time_in_string"`
+	User                string                  `json:"user" db:"user"`
+	Host                string                  `json:"host" db:"host"`
+	UpdateTime          int64                   `json:"update_time" db:"update_time"`
+	CPU                 CPUBasicInformation     `json:"cpu" db:"cpu"`
+	Memory              MemoryBasicInformation  `json:"memory" db:"memory"`
+	Disk                DiskBasicInformation    `json:"disk" db:"disk"`
+	Network             NetworkBasicInformation `json:"network" db:"network"`
 }
 
 type CPUBasicInformation struct {
-	CPUCount int `json:"cpu_count"`
+	CPUCount int `json:"cpu_count" db:"cpu_count"`
 }
 
 type DiskBasicInformation struct {
-	DiskSize int `json:"disk_size"`
+	DiskSize float32 `json:"disk_size" db:"disk_size"`
 }
 
 type MemoryBasicInformation struct {
-	MemorySize int `json:"memory_size"`
+	MemorySize float32 `json:"memory_size" db:"memory_size"`
 }
 
 type NetworkBasicInformation struct {
-	NetworkMac int `json:"network_mac"`
-	NetworkIP  int `json:"network_ip"`
+	NetworkMac string `json:"network_mac" db:"network_mac"`
+	NetworkIP  string `json:"network_ip" db:"network_ip"`
+}
+
+func TransformEquipmentFromMongoToMysql(ebia *EquipmentBasicInformationAwareness) *EquipmentBasicInformationAwarenessMysql {
+	return &EquipmentBasicInformationAwarenessMysql{
+		DataType:            ebia.DataType,
+		EquipmentID:         ebia.EquipmentID,
+		OperateSystem:       ebia.OperateSystem,
+		NetworkName:         ebia.NetworkName,
+		Platform:            ebia.Platform,
+		Architecture:        ebia.Architecture,
+		BootTimeInTimestamp: ebia.BootTimeInTimestamp,
+		BootTimeInString:    ebia.BootTimeInString,
+		User:                ebia.User,
+		Host:                ebia.Host,
+		UpdateTime:          ebia.UpdateTime,
+		CPUCount:            ebia.CPU.CPUCount,
+		DiskSize:            ebia.Disk.DiskSize,
+		MemorySize:          ebia.Memory.MemorySize,
+		NetworkMac:          ebia.Network.NetworkMac,
+		NetworkIP:           ebia.Network.NetworkIP,
+	}
 }
 
 type EquipmentsStatusAwareness struct {
-	DataType    int            `json:"data_type"`
-	EquipmentID int            `json:"equipment_id"`
-	NetworkMac  string         `json:"network_mac"`
-	RunningTime int64          `json:"running_time"`
-	UpdateTime  int64          `json:"update_time"`
-	CPU         *CPUStatus     `json:"cpu"`
-	Memory      *MemoryStatus  `json:"memory"`
-	Disk        *DiskStatus    `json:"disk"`
-	Network     *NetworkStatus `json:"network"`
+	DataType    int           `json:"data_type"`
+	EquipmentID int           `json:"equipment_id"`
+	NetworkMac  string        `json:"network_mac"`
+	RunningTime int64         `json:"running_time"`
+	UpdateTime  int64         `json:"update_time"`
+	CPU         CPUStatus     `json:"cpu"`
+	Memory      MemoryStatus  `json:"memory"`
+	Disk        DiskStatus    `json:"disk"`
+	Network     NetworkStatus `json:"network"`
 }
 
 type CPUStatus struct {

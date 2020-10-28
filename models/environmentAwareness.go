@@ -1,12 +1,5 @@
 package models
 
-// DataType:
-// 10: PeopleAwareness
-// 11: PersonAwareness
-// 20: EnvironmentAwareness
-// 30: EquipmentBasicInformationAwareness
-// 31: EquipmentStatusAwareness
-
 type EnvironmentAwareness struct {
 	DataType    int     `json:"data_type"`
 	SensorID    int     `json:"sensor_id"`

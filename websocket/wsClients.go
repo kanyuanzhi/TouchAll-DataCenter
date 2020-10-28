@@ -7,19 +7,15 @@ import (
 	"log"
 )
 
-//1: PeopleAwareness
-//2: PersonAwareness
-//3: EnvironmentAwareness
-//4: EquipmentAwareness
-
 type WsClients struct {
 	members    map[*websocket.Conn]interface{}
 	Register   chan *websocket.Conn
 	Unregister chan *websocket.Conn
 
-	requestForPeople          chan *models.WsRequestForPeople
-	requestForPerson          chan *models.WsRequestForPerson
-	requestForEquipmentStatus chan *models.WsRequestForEquipmentStatus
+	requestForPeople               chan *models.WsRequestForPeople
+	requestForPerson               chan *models.WsRequestForPerson
+	requestForEquipmentStatus      chan *models.WsRequestForEquipmentStatus
+	requestForEquipmentGroupStatus chan *models.WsRequestForEquipmentGroupStatus
 
 	peopleMembers          map[int]map[*websocket.Conn]bool
 	personMembers          map[string]map[*websocket.Conn]bool
@@ -37,9 +33,10 @@ func NewWsClients() *WsClients {
 		Register:   make(chan *websocket.Conn),
 		Unregister: make(chan *websocket.Conn),
 
-		requestForPeople:          make(chan *models.WsRequestForPeople),
-		requestForPerson:          make(chan *models.WsRequestForPerson),
-		requestForEquipmentStatus: make(chan *models.WsRequestForEquipmentStatus),
+		requestForPeople:               make(chan *models.WsRequestForPeople),
+		requestForPerson:               make(chan *models.WsRequestForPerson),
+		requestForEquipmentStatus:      make(chan *models.WsRequestForEquipmentStatus),
+		requestForEquipmentGroupStatus: make(chan *models.WsRequestForEquipmentGroupStatus),
 
 		peopleMembers:          make(map[int]map[*websocket.Conn]bool),
 		personMembers:          make(map[string]map[*websocket.Conn]bool),
@@ -78,7 +75,13 @@ func (wsClients *WsClients) Start() {
 				wsClients.equipmentStatusMembers[wsRequest.EquipmentID] = make(map[*websocket.Conn]bool)
 			}
 			wsClients.equipmentStatusMembers[wsRequest.EquipmentID][wsRequest.Conn] = true
-
+		case wsRequest := <-wsClients.requestForEquipmentGroupStatus: // 暂时不用
+			for _, equipmentID := range wsRequest.EquipmentIDs {
+				if _, has := wsClients.equipmentStatusMembers[equipmentID]; !has {
+					wsClients.equipmentStatusMembers[equipmentID] = make(map[*websocket.Conn]bool)
+				}
+				wsClients.equipmentStatusMembers[equipmentID][wsRequest.Conn] = true
+			}
 		case message := <-wsClients.PeopleBroadcast:
 			if members, has := wsClients.peopleMembers[message.Camera]; has {
 				data, _ := json.Marshal(message)

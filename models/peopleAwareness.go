@@ -1,12 +1,5 @@
 package models
 
-// DataType:
-// 10: PeopleAwareness
-// 11: PersonAwareness
-// 20: EnvironmentAwareness
-// 30: EquipmentBasicInformationAwareness
-// 31: EquipmentStatusAwareness
-
 type PeopleAwareness struct {
 	DataType            int                `json:"data_type" bson:"data_type"`
 	Camera              int                `json:"camera" bson:"camera"`

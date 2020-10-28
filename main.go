@@ -14,7 +14,7 @@ func main() {
 	go wsServer.Start()
 
 	socketClients := socket.NewSocketClients()
-	go socketClients.Status()
+	//go socketClients.Status()
 
 	socketServer := socket.NewSocketServer(wsClients, socketClients)
 	go socketServer.Start()
