@@ -12,19 +12,17 @@ type WsClients struct {
 	Register   chan *websocket.Conn
 	Unregister chan *websocket.Conn
 
-	requestForPeople               chan *models.WsRequestForPeople
-	requestForPerson               chan *models.WsRequestForPerson
-	requestForEquipmentStatus      chan *models.WsRequestForEquipmentStatus
-	requestForEquipmentGroupStatus chan *models.WsRequestForEquipmentGroupStatus
+	requestForPeople          chan *models.WsRequestForPeople
+	requestForPerson          chan *models.WsRequestForPerson
+	requestForEquipmentStatus chan *models.WsRequestForEquipmentStatus
 
 	peopleMembers          map[int]map[*websocket.Conn]bool
 	personMembers          map[string]map[*websocket.Conn]bool
-	environmentMembers     map[int]map[*websocket.Conn]bool
 	equipmentStatusMembers map[int]map[*websocket.Conn]bool
 
 	PeopleBroadcast          chan *models.PeopleAwareness
 	PersonBroadcast          chan []*models.PersonAwareness
-	EquipmentStatusBroadcast chan *models.EquipmentsStatusAwareness
+	EquipmentStatusBroadcast chan *models.EquipmentStatusAwareness
 }
 
 func NewWsClients() *WsClients {
@@ -33,19 +31,17 @@ func NewWsClients() *WsClients {
 		Register:   make(chan *websocket.Conn),
 		Unregister: make(chan *websocket.Conn),
 
-		requestForPeople:               make(chan *models.WsRequestForPeople),
-		requestForPerson:               make(chan *models.WsRequestForPerson),
-		requestForEquipmentStatus:      make(chan *models.WsRequestForEquipmentStatus),
-		requestForEquipmentGroupStatus: make(chan *models.WsRequestForEquipmentGroupStatus),
+		requestForPeople:          make(chan *models.WsRequestForPeople),
+		requestForPerson:          make(chan *models.WsRequestForPerson),
+		requestForEquipmentStatus: make(chan *models.WsRequestForEquipmentStatus),
 
 		peopleMembers:          make(map[int]map[*websocket.Conn]bool),
 		personMembers:          make(map[string]map[*websocket.Conn]bool),
-		environmentMembers:     make(map[int]map[*websocket.Conn]bool),
 		equipmentStatusMembers: make(map[int]map[*websocket.Conn]bool),
 
 		PeopleBroadcast:          make(chan *models.PeopleAwareness),
 		PersonBroadcast:          make(chan []*models.PersonAwareness),
-		EquipmentStatusBroadcast: make(chan *models.EquipmentsStatusAwareness),
+		EquipmentStatusBroadcast: make(chan *models.EquipmentStatusAwareness),
 	}
 }
 
@@ -75,13 +71,6 @@ func (wsClients *WsClients) Start() {
 				wsClients.equipmentStatusMembers[wsRequest.EquipmentID] = make(map[*websocket.Conn]bool)
 			}
 			wsClients.equipmentStatusMembers[wsRequest.EquipmentID][wsRequest.Conn] = true
-		case wsRequest := <-wsClients.requestForEquipmentGroupStatus: // 暂时不用
-			for _, equipmentID := range wsRequest.EquipmentIDs {
-				if _, has := wsClients.equipmentStatusMembers[equipmentID]; !has {
-					wsClients.equipmentStatusMembers[equipmentID] = make(map[*websocket.Conn]bool)
-				}
-				wsClients.equipmentStatusMembers[equipmentID][wsRequest.Conn] = true
-			}
 		case message := <-wsClients.PeopleBroadcast:
 			if members, has := wsClients.peopleMembers[message.Camera]; has {
 				data, _ := json.Marshal(message)

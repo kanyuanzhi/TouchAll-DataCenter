@@ -36,7 +36,7 @@ func (ws *WsServer) Start() {
 	port := config.GetWebSocketConfig().(string)
 	addr := flag.String("addr", ":"+port, "http service address")
 	http.HandleFunc("/ws", ws.serveWs)
-	log.Printf("Start WsServer on port %s", port)
+	log.Printf("Start the WsServer of data center on port %s", port)
 	http.ListenAndServe(*addr, nil)
 }
 
@@ -79,11 +79,6 @@ func (ws *WsServer) serveWs(w http.ResponseWriter, r *http.Request) {
 		json.Unmarshal(message, &requestForEquipmentStatus)
 		requestForEquipmentStatus.Conn = conn
 		ws.wsClients.requestForEquipmentStatus <- &requestForEquipmentStatus
-	case 33: // 暂时不用
-		var requestForEquipmentGroupStatus models.WsRequestForEquipmentGroupStatus
-		json.Unmarshal(message, &requestForEquipmentGroupStatus)
-		requestForEquipmentGroupStatus.Conn = conn
-		ws.wsClients.requestForEquipmentGroupStatus <- &requestForEquipmentGroupStatus
 	default:
 		break
 	}

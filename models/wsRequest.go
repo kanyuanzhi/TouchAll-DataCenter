@@ -19,7 +19,8 @@ type WsRequestForPerson struct {
 
 type WsRequestForEquipmentStatus struct {
 	WsRequest
-	EquipmentID int `json:"equipment_id" bson:"equipment_id"`
+	EquipmentID int    `json:"equipment_id" bson:"equipment_id"`
+	NetworkMac  string `json:"network_mac" bson:"network_mac"`
 }
 
 type WsRequestForEquipmentGroupStatus struct {

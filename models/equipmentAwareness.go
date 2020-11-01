@@ -15,8 +15,13 @@ type EquipmentBasicInformationAwarenessMysql struct {
 	CPUCount            int     `json:"cpu_count" db:"cpu_count"`
 	DiskSize            float32 `json:"disk_size" db:"disk_size"`
 	MemorySize          float32 `json:"memory_size" db:"memory_size"`
-	NetworkMac          string  `json:"network_mac" db:"network_mac"`
-	NetworkIP           string  `json:"network_ip" db:"network_ip"`
+	NetworkMac1         string  `json:"network_mac_1" db:"network_mac_1"`
+	NetworkIP1          string  `json:"network_ip_1" db:"network_ip_1"`
+	NetworkMac2         string  `json:"network_mac_2" db:"network_mac_2"`
+	NetworkIP2          string  `json:"network_ip_2" db:"network_ip_2"`
+	NetworkCard1        string  `json:"network_card_1" db:"network_card_1"`
+	NetworkCard2        string  `json:"network_card_2" db:"network_card_2"`
+	Authenticated       int     `json:"authenticated" db:"authenticated"`
 }
 
 type EquipmentBasicInformationAwareness struct {
@@ -70,15 +75,19 @@ func TransformEquipmentFromMongoToMysql(ebia *EquipmentBasicInformationAwareness
 		CPUCount:            ebia.CPU.CPUCount,
 		DiskSize:            ebia.Disk.DiskSize,
 		MemorySize:          ebia.Memory.MemorySize,
-		NetworkMac:          ebia.Network.NetworkMac,
-		NetworkIP:           ebia.Network.NetworkIP,
+		NetworkMac1:         ebia.Network.NetworkMac,
+		NetworkIP1:          ebia.Network.NetworkIP,
+		NetworkMac2:         "",
+		NetworkIP2:          "",
+		NetworkCard1:        "",
+		NetworkCard2:        "",
+		Authenticated:       0,
 	}
 }
 
-type EquipmentsStatusAwareness struct {
+type EquipmentStatusAwareness struct {
 	DataType    int           `json:"data_type"`
 	EquipmentID int           `json:"equipment_id"`
-	NetworkMac  string        `json:"network_mac"`
 	RunningTime int64         `json:"running_time"`
 	UpdateTime  int64         `json:"update_time"`
 	CPU         CPUStatus     `json:"cpu"`
@@ -107,4 +116,16 @@ type NetworkStatus struct {
 	NetworkDropOut          int     `json:"network_drop_out"`
 	NetworkSendGigabytes    float32 `json:"network_send_gigabytes"`
 	NetworkReceiveGigabytes float32 `json:"network_receive_gigabytes"`
+}
+
+type ResponseForEquipmentBasicInformation struct {
+	DataType      int `json:"data_type"`
+	EquipmentID   int `json:"equipment_id"`
+	Authenticated int `json:"authenticated"`
+}
+
+func NewResponseForEquipmentBasicInformation() *ResponseForEquipmentBasicInformation {
+	return &ResponseForEquipmentBasicInformation{
+		DataType: 32,
+	}
 }
