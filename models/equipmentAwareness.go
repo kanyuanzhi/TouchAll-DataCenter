@@ -119,9 +119,10 @@ type NetworkStatus struct {
 }
 
 type ResponseForEquipmentBasicInformation struct {
-	DataType      int `json:"data_type"`
-	EquipmentID   int `json:"equipment_id"`
-	Authenticated int `json:"authenticated"`
+	DataType      int  `json:"data_type"`
+	EquipmentID   int  `json:"equipment_id"`
+	Authenticated int  `json:"authenticated"`
+	MysqlUsed     bool `json:"mysql_used"`
 }
 
 func NewResponseForEquipmentBasicInformation() *ResponseForEquipmentBasicInformation {

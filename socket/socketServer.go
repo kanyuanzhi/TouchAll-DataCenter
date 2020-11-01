@@ -131,8 +131,8 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 				go func(data []byte, conn net.Conn) {
 					if socketServer.useMysql == true {
 						//todo:根据network_mac查询是否在数据库mysql中注册，
-						// 若注册则更新并返回数据库中注册ID、验证状态，若未注册则随机注册一个ID并与"未验证"状态一起返回至设备处理
-						// 设备将该id添加至发送到数据中心的状态信息中，
+						// 若注册则更新并返回数据库中注册ID、验证状态，若未注册则随机注册一个ID并与"未验证"状态一起返回至设备处理,
+						// 设备将该ID添加至发送到数据中心的状态信息中，若没有此ID目前将禁止设备发送状态
 						responseForEquipmentBasicInformation := models.NewResponseForEquipmentBasicInformation()
 						var equipmentBasicInformationAwareness models.EquipmentBasicInformationAwareness
 						json.Unmarshal(data, &equipmentBasicInformationAwareness)
@@ -155,6 +155,7 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 							}
 							responseForEquipmentBasicInformation.EquipmentID = temporalEquipmentID
 							responseForEquipmentBasicInformation.Authenticated = 0 // 由数据中心自动注册的设备为未验证设备
+							responseForEquipmentBasicInformation.MysqlUsed = true
 							equipmentBasicInformationAwareness.EquipmentID = temporalEquipmentID
 							utils.InsertEquipmentBasicInformation(&equipmentBasicInformationAwareness, socketServer.mysqlConn)
 						}
@@ -164,7 +165,15 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 							log.Println(err.Error())
 						}
 					} else {
-
+						responseForEquipmentBasicInformation := models.NewResponseForEquipmentBasicInformation()
+						responseForEquipmentBasicInformation.EquipmentID = 0
+						responseForEquipmentBasicInformation.Authenticated = 0 // 由数据中心自动注册的设备为未验证设备
+						responseForEquipmentBasicInformation.MysqlUsed = false
+						responseToEquipment, _ := json.Marshal(responseForEquipmentBasicInformation)
+						_, err := conn.Write(responseToEquipment)
+						if err != nil {
+							log.Println(err.Error())
+						}
 					}
 				}(data, conn)
 			case 31:
