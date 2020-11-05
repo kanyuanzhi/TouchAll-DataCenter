@@ -2,15 +2,17 @@ package utils
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/mongo"
+	"dataCenter/dbDrivers"
 	"log"
 	"time"
 )
 
-func InsertOneRecord(document interface{}, connToCollection *mongo.Collection) (success bool, err error) {
+var mongoDB = dbDrivers.GetMongoDB()
+
+func InsertOneRecord(document interface{}, collection string) (success bool, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err = connToCollection.InsertOne(ctx, document)
+	_, err = mongoDB.Collection(collection).InsertOne(ctx, document)
 	if err != nil {
 		log.Fatal(err)
 		return false, err
@@ -19,10 +21,10 @@ func InsertOneRecord(document interface{}, connToCollection *mongo.Collection) (
 	return true, nil
 }
 
-func InsertManyRecords(documents []interface{}, connToCollection *mongo.Collection) (success bool, err error) {
+func InsertManyRecords(documents []interface{}, collection string) (success bool, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err = connToCollection.InsertMany(ctx, documents)
+	_, err = mongoDB.Collection(collection).InsertMany(ctx, documents)
 	if err != nil {
 		log.Fatal(err)
 		return false, err

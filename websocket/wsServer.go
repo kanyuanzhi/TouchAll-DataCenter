@@ -1,8 +1,8 @@
 package websocket
 
 import (
+	"dataCenter/config"
 	"dataCenter/models"
-	"dataCenter/utils"
 	"encoding/json"
 	"flag"
 	"github.com/gorilla/websocket"
@@ -32,11 +32,11 @@ func NewWsServer(wsClients *WsClients) *WsServer {
 }
 
 func (ws *WsServer) Start() {
-	config := utils.NewConfig()
+	config := config.NewConfig()
 	port := config.GetWebSocketConfig().(string)
 	addr := flag.String("addr", ":"+port, "http service address")
 	http.HandleFunc("/ws", ws.serveWs)
-	log.Printf("Start the WsServer of data center on port %s", port)
+	log.Printf("Start the WsServer of the data center on port %s", port)
 	http.ListenAndServe(*addr, nil)
 }
 

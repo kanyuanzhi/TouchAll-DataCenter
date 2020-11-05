@@ -6,11 +6,11 @@
     "port": "9091"
   },
   "mongodb": {
-    "host": "10.211.55.9",
+    "host": "119.28.16.179",
     "port": "27017",
     "username": "root",
-    "password": "root",
-    "database": "awareness",
+    "password": "123456",
+    "database": "touch_all",
     "use": false
   },
   "mysql": {
@@ -18,7 +18,7 @@
     "port": "3306",
     "username": "root",
     "password": "123456",
-    "database": "awareness",
+    "database": "touch_all",
     "use": true
   }
 }

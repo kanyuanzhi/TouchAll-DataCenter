@@ -1,81 +1,62 @@
 package utils
 
 import (
+	"dataCenter/dbDrivers"
 	"dataCenter/models"
-	"github.com/jmoiron/sqlx"
-	"log"
+	"errors"
+	"gorm.io/gorm"
 )
 
-func DeleteEquipmentBasicInformation(ebia *models.EquipmentBasicInformationAwareness, db *sqlx.DB) {
-	sqlStr := "DELETE FROM equipment WHERE network_mac='" + ebia.Network.NetworkMac + "'"
-	res := db.MustExec(sqlStr)
-	if res != nil {
-		//log.Println(res)
+var mysqlDB = dbDrivers.GetMysqlDB()
+
+// 判断设备ID是否已注册
+func IsEquipmentIDExisted(id int) bool {
+	var equipment models.EquipmentBasicInformationAwarenessMysql
+	result := mysqlDB.Select("id").Where("equipment_id=?", id).First(&equipment)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return false
+		} else {
+			panic(result.Error.Error())
+			return false
+		}
 	}
+	return true
 }
 
-func CheckEquipmentBasicInformation(ebia *models.EquipmentBasicInformationAwareness, db *sqlx.DB) bool {
-	sqlStr := "SELECT network_mac FROM equipment_information WHERE network_mac=?"
-	var ebiaMysql models.EquipmentBasicInformationAwarenessMysql
-	err := db.Get(&ebiaMysql, sqlStr, ebia.Network.NetworkMac)
-	if err != nil {
-		log.Println(err.Error())
+// 更新设备信息
+func UpdateEquipmentBasicInformation(equipmentJson models.EquipmentBasicInformationAwareness) bool {
+	equipmentMysql := models.TransformEquipmentFromJsonToMysql(&equipmentJson)
+	result := mysqlDB.Model(&equipmentMysql).Omit("id", "data_type", "equipment_id", "network_mac_1", "network_mac_2", "authenticated").Updates(equipmentMysql)
+	if result.Error != nil {
+		panic(result.Error.Error())
 		return false
 	}
 	return true
 }
 
-func IsEquipmentIDExisted(id int, db *sqlx.DB) bool {
-	sqlStr := "select equipment_id from equipment_information where equipment_id=?"
-	var result models.EquipmentBasicInformationAwarenessMysql
-	err := db.Get(&result, sqlStr, id)
-	if err != nil {
-		log.Println(err.Error() + " IsEquipmentIDExisted=false")
+// 新建设备信息
+func InsertEquipmentBasicInformation(equipmentJson models.EquipmentBasicInformationAwareness) bool {
+	equipmentMysql := models.TransformEquipmentFromJsonToMysql(&equipmentJson)
+	result := mysqlDB.Create(&equipmentMysql)
+	if result.Error != nil {
+		panic(result.Error.Error())
 		return false
 	}
 	return true
 }
 
-func UpdateEquipmentBasicInformation(ebia *models.EquipmentBasicInformationAwareness, db *sqlx.DB) bool {
-	ebiaMysql := models.TransformEquipmentFromMongoToMysql(ebia)
-	sqlStr := "UPDATE equipment_information SET " +
-		"network_name=:network_name, operate_system=:operate_system,architecture=:architecture," +
-		"boot_time_in_timestamp=:boot_time_in_timestamp,platform=:platform," +
-		"boot_time_in_string=:boot_time_in_string,user=:user,host=:host,update_time:=update_time," +
-		"cpu_count=:cpu_count,disk_size=:disk_size,memory_size=:memory_size,data_type=:data_type " +
-		"WHERE equipment_id=:equipment_id"
-	_, err := db.NamedExec(sqlStr, ebiaMysql)
-	if err != nil {
-		log.Println(err.Error())
-		return false
+// 判断设备网卡是否已注册
+func IsEquipmentNetworkMacExisted(mac string) (bool, int, int) {
+	var equipment models.EquipmentBasicInformationAwarenessMysql
+	result := mysqlDB.Select("equipment_id", "authenticated").Where("network_mac_1=?", mac).Or("network_mac_2=?", mac).First(&equipment)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return false, 0, 0
+		} else {
+			panic(result.Error.Error())
+			return false, 0, 0
+		}
 	}
-	return true
-}
-
-func InsertEquipmentBasicInformation(ebia *models.EquipmentBasicInformationAwareness, db *sqlx.DB) bool {
-	ebiaMysql := models.TransformEquipmentFromMongoToMysql(ebia)
-	sqlStr := "INSERT INTO equipment_information(" +
-		"equipment_id ,network_name, operate_system,architecture,boot_time_in_timestamp,platform," +
-		"boot_time_in_string,user,host,update_time," +
-		"cpu_count,disk_size,memory_size,data_type,authenticated,network_mac_1) " +
-		"VALUES(:equipment_id,:network_name,:operate_system,:architecture,:boot_time_in_timestamp,:platform," +
-		":boot_time_in_string,:user,:host,:update_time," +
-		":cpu_count,:disk_size,:memory_size,:data_type,:authenticated,:network_mac_1)"
-	_, err := db.NamedExec(sqlStr, ebiaMysql)
-	if err != nil {
-		log.Println(err.Error())
-		return false
-	}
-	return true
-}
-
-func CheckNetworkMac(mac string, db *sqlx.DB) (bool, int, int) {
-	sqlStr := "select equipment_id,authenticated from equipment_information where network_mac_1=? or network_mac_2=?"
-	var ebiaMysql models.EquipmentBasicInformationAwarenessMysql
-	err := db.Get(&ebiaMysql, sqlStr, mac, mac)
-	if err != nil {
-		log.Println(err.Error() + " isEquipmentVisited=false")
-		return false, 0, 0
-	}
-	return true, ebiaMysql.EquipmentID, ebiaMysql.Authenticated
+	return true, equipment.EquipmentID, equipment.Authenticated
 }

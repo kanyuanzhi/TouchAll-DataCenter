@@ -2,7 +2,7 @@ package dbDrivers
 
 import (
 	"context"
-	"dataCenter/utils"
+	"dataCenter/config"
 	"fmt"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -11,11 +11,13 @@ import (
 	"time"
 )
 
-func GetMongodbConn() *mongo.Database {
+var MongoDB *mongo.Database
+
+func initMongodb() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	config := utils.NewConfig()
+	config := config.NewConfig()
 	username, password, host, port, database := config.GetMongodbConfig()
 	url := fmt.Sprintf("mongodb://%s:%s@%s:%s", username, password, host, port)
 	opt := options.Client().ApplyURI(url)
@@ -31,5 +33,9 @@ func GetMongodbConn() *mongo.Database {
 
 	log.Printf("Mongodb connection successed")
 
-	return client.Database(database.(string))
+	MongoDB = client.Database(database.(string))
+}
+
+func GetMongoDB() *mongo.Database {
+	return MongoDB
 }

@@ -1,45 +1,54 @@
 package models
 
+import (
+	"gorm.io/gorm"
+	"time"
+)
+
 type EquipmentBasicInformationAwarenessMysql struct {
-	DataType            int     `json:"data_type" db:"data_type"`
-	EquipmentID         int     `json:"equipment_id" db:"equipment_id"`
-	OperateSystem       string  `json:"operate_system" db:"operate_system"`
-	NetworkName         string  `json:"network_name" db:"network_name"`
-	Platform            string  `json:"platform" db:"platform"`
-	Architecture        string  `json:"architecture" db:"architecture"`
-	BootTimeInTimestamp int64   `json:"boot_time_in_timestamp" db:"boot_time_in_timestamp"`
-	BootTimeInString    string  `json:"boot_time_in_string" db:"boot_time_in_string"`
-	User                string  `json:"user" db:"user"`
-	Host                string  `json:"host" db:"host"`
-	UpdateTime          int64   `json:"update_time" db:"update_time"`
-	CPUCount            int     `json:"cpu_count" db:"cpu_count"`
-	DiskSize            float32 `json:"disk_size" db:"disk_size"`
-	MemorySize          float32 `json:"memory_size" db:"memory_size"`
-	NetworkMac1         string  `json:"network_mac_1" db:"network_mac_1"`
-	NetworkIP1          string  `json:"network_ip_1" db:"network_ip_1"`
-	NetworkMac2         string  `json:"network_mac_2" db:"network_mac_2"`
-	NetworkIP2          string  `json:"network_ip_2" db:"network_ip_2"`
-	NetworkCard1        string  `json:"network_card_1" db:"network_card_1"`
-	NetworkCard2        string  `json:"network_card_2" db:"network_card_2"`
-	Authenticated       int     `json:"authenticated" db:"authenticated"`
+	gorm.Model
+	DataType      int       `json:"data_type" db:"data_type"`
+	EquipmentID   int       `json:"equipment_id" db:"equipment_id" gorm:"primaryKey;autoIncrement:false"`
+	OperateSystem string    `json:"operate_system" db:"operate_system"`
+	NetworkName   string    `json:"network_name" db:"network_name"`
+	Platform      string    `json:"platform" db:"platform"`
+	Architecture  string    `json:"architecture" db:"architecture"`
+	Processor     string    `json:"processor"`
+	BootTime      time.Time `json:"boot_time" db:"boot_time"`
+	User          string    `json:"user" db:"user"`
+	Host          string    `json:"host" db:"host"`
+	CPUCount      int       `json:"cpu_count" db:"cpu_count"`
+	DiskSize      float32   `json:"disk_size" db:"disk_size"`
+	MemorySize    float32   `json:"memory_size" db:"memory_size"`
+	NetworkMac1   string    `json:"network_mac_1" db:"network_mac_1" gorm:"column:network_mac_1"`
+	NetworkIP1    string    `json:"network_ip_1" db:"network_ip_1" gorm:"column:network_ip_1"`
+	NetworkMac2   string    `json:"network_mac_2" db:"network_mac_2" gorm:"column:network_mac_2"`
+	NetworkIP2    string    `json:"network_ip_2" db:"network_ip_2" gorm:"column:network_ip_2"`
+	NetworkCard1  string    `json:"network_card_1" db:"network_card_1" gorm:"column:network_card_1"`
+	NetworkCard2  string    `json:"network_card_2" db:"network_card_2" gorm:"column:network_card_2"`
+	Authenticated int       `json:"authenticated" db:"authenticated"`
+}
+
+func (EquipmentBasicInformationAwarenessMysql) TableName() string {
+	return "equipment"
 }
 
 type EquipmentBasicInformationAwareness struct {
-	DataType            int                     `json:"data_type" db:"data_type"`
-	EquipmentID         int                     `json:"equipment_id" db:"equipment_id"`
-	OperateSystem       string                  `json:"operate_system" db:"operate_system"`
-	NetworkName         string                  `json:"network_name" db:"network_name"`
-	Platform            string                  `json:"platform" db:"platform"`
-	Architecture        string                  `json:"architecture" db:"architecture"`
-	BootTimeInTimestamp int64                   `json:"boot_time_in_timestamp" db:"boot_time_in_timestamp"`
-	BootTimeInString    string                  `json:"boot_time_in_string" db:"boot_time_in_string"`
-	User                string                  `json:"user" db:"user"`
-	Host                string                  `json:"host" db:"host"`
-	UpdateTime          int64                   `json:"update_time" db:"update_time"`
-	CPU                 CPUBasicInformation     `json:"cpu" db:"cpu"`
-	Memory              MemoryBasicInformation  `json:"memory" db:"memory"`
-	Disk                DiskBasicInformation    `json:"disk" db:"disk"`
-	Network             NetworkBasicInformation `json:"network" db:"network"`
+	DataType      int                     `json:"data_type" db:"data_type"`
+	EquipmentID   int                     `json:"equipment_id" db:"equipment_id"`
+	OperateSystem string                  `json:"operate_system" db:"operate_system"`
+	NetworkName   string                  `json:"network_name" db:"network_name"`
+	Platform      string                  `json:"platform" db:"platform"`
+	Architecture  string                  `json:"architecture" db:"architecture"`
+	Processor     string                  `json:"processor"`
+	BootTime      int64                   `json:"boot_time" db:"boot_time`
+	User          string                  `json:"user" db:"user"`
+	Host          string                  `json:"host" db:"host"`
+	UpdatedAt     int64                   `json:"updated_at"`
+	CPU           CPUBasicInformation     `json:"cpu" db:"cpu"`
+	Memory        MemoryBasicInformation  `json:"memory" db:"memory"`
+	Disk          DiskBasicInformation    `json:"disk" db:"disk"`
+	Network       NetworkBasicInformation `json:"network" db:"network"`
 }
 
 type CPUBasicInformation struct {
@@ -59,29 +68,28 @@ type NetworkBasicInformation struct {
 	NetworkIP  string `json:"network_ip" db:"network_ip"`
 }
 
-func TransformEquipmentFromMongoToMysql(ebia *EquipmentBasicInformationAwareness) *EquipmentBasicInformationAwarenessMysql {
+func TransformEquipmentFromJsonToMysql(ebia *EquipmentBasicInformationAwareness) *EquipmentBasicInformationAwarenessMysql {
 	return &EquipmentBasicInformationAwarenessMysql{
-		DataType:            ebia.DataType,
-		EquipmentID:         ebia.EquipmentID,
-		OperateSystem:       ebia.OperateSystem,
-		NetworkName:         ebia.NetworkName,
-		Platform:            ebia.Platform,
-		Architecture:        ebia.Architecture,
-		BootTimeInTimestamp: ebia.BootTimeInTimestamp,
-		BootTimeInString:    ebia.BootTimeInString,
-		User:                ebia.User,
-		Host:                ebia.Host,
-		UpdateTime:          ebia.UpdateTime,
-		CPUCount:            ebia.CPU.CPUCount,
-		DiskSize:            ebia.Disk.DiskSize,
-		MemorySize:          ebia.Memory.MemorySize,
-		NetworkMac1:         ebia.Network.NetworkMac,
-		NetworkIP1:          ebia.Network.NetworkIP,
-		NetworkMac2:         "",
-		NetworkIP2:          "",
-		NetworkCard1:        "",
-		NetworkCard2:        "",
-		Authenticated:       0,
+		DataType:      ebia.DataType,
+		EquipmentID:   ebia.EquipmentID,
+		OperateSystem: ebia.OperateSystem,
+		NetworkName:   ebia.NetworkName,
+		Platform:      ebia.Platform,
+		Architecture:  ebia.Architecture,
+		Processor:     ebia.Processor,
+		BootTime:      time.Unix(ebia.BootTime, 0),
+		User:          ebia.User,
+		Host:          ebia.Host,
+		CPUCount:      ebia.CPU.CPUCount,
+		DiskSize:      ebia.Disk.DiskSize,
+		MemorySize:    ebia.Memory.MemorySize,
+		NetworkMac1:   ebia.Network.NetworkMac,
+		NetworkIP1:    ebia.Network.NetworkIP,
+		NetworkMac2:   "",
+		NetworkIP2:    "",
+		NetworkCard1:  "",
+		NetworkCard2:  "",
+		Authenticated: 0,
 	}
 }
 
@@ -89,7 +97,7 @@ type EquipmentStatusAwareness struct {
 	DataType    int           `json:"data_type"`
 	EquipmentID int           `json:"equipment_id"`
 	RunningTime int64         `json:"running_time"`
-	UpdateTime  int64         `json:"update_time"`
+	UpdatedAt   int64         `json:"updated_at"`
 	CPU         CPUStatus     `json:"cpu"`
 	Memory      MemoryStatus  `json:"memory"`
 	Disk        DiskStatus    `json:"disk"`
@@ -122,7 +130,8 @@ type ResponseForEquipmentBasicInformation struct {
 	DataType      int  `json:"data_type"`
 	EquipmentID   int  `json:"equipment_id"`
 	Authenticated int  `json:"authenticated"`
-	MysqlUsed     bool `json:"mysql_used"`
+	UseMysql      bool `json:"use_mysql"`
+	UseMongodb    bool `json:"use_mongodb"`
 }
 
 func NewResponseForEquipmentBasicInformation() *ResponseForEquipmentBasicInformation {
