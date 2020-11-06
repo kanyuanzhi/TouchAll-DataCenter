@@ -5,3 +5,4 @@ DataType:
 30: EquipmentBasicInformationAwareness
 31: EquipmentStatusAwareness
 32: ResponseForEquipmentBasicInformation
+33: RequestForEquipmentStatusStream,EquipmentStatusStream

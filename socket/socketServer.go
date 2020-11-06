@@ -50,7 +50,7 @@ func (socketServer *SocketServer) Start() {
 			log.Println(err)
 			return
 		}
-		socketServer.socketClients.members[&conn] = true
+		socketServer.socketClients.members[conn] = true
 		go socketServer.handleConn(conn)
 	}
 }
@@ -59,7 +59,6 @@ func (socketServer *SocketServer) Start() {
 func (socketServer *SocketServer) handleConn(conn net.Conn) {
 	defer func() {
 		conn.Close()
-		delete(socketServer.socketClients.members, &conn)
 	}()
 
 	tempBuffer := make([]byte, 0)
@@ -69,7 +68,11 @@ func (socketServer *SocketServer) handleConn(conn net.Conn) {
 		var buffer = make([]byte, 1024)
 		n, err := conn.Read(buffer)
 		if err != nil {
-			fmt.Println(err)
+			// 设备与数据中心连接断开后，依据连接conn找到设备ID，并删除设备状态流中该设备的状态信息
+			delete(socketServer.wsClients.EquipmentStatusStream.StatusStream, socketServer.socketClients.equipmentMembers[conn])
+			delete(socketServer.socketClients.members, conn)
+			delete(socketServer.socketClients.equipmentMembers, conn)
+			fmt.Println(err.Error())
 			return
 		}
 		tempBuffer = protocal.Unpack(append(tempBuffer, buffer[:n]...), readerChannel)
@@ -114,7 +117,9 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 				// EnvironmentAwareness
 				continue
 			case 30:
-				// EquipmentBasicInformationAwareness，不做推送，只更新数据库
+				// EquipmentBasicInformationAwareness，设备基本信息，不做推送，只更新数据库
+
+				// 响应给设备的信息
 				responseForEquipmentBasicInformation := models.NewResponseForEquipmentBasicInformation()
 				responseForEquipmentBasicInformation.UseMysql = socketServer.useMysql
 				responseForEquipmentBasicInformation.UseMongodb = socketServer.useMongodb
@@ -161,10 +166,9 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 					}
 				}(data, conn, responseForEquipmentBasicInformation)
 			case 31:
-				// EquipmentStatusAwareness
+				// EquipmentStatusAwareness，设备状态信息，存入Mongodb并汇总至设备状态流EquipmentStatusStream
 				var equipmentStatusAwareness models.EquipmentStatusAwareness
 				json.Unmarshal(data, &equipmentStatusAwareness)
-				//log.Println(equipmentStatusAwareness)
 
 				go func(equipmentStatusAwareness *models.EquipmentStatusAwareness) {
 					if socketServer.useMongodb == true {
@@ -172,9 +176,15 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 					}
 				}(&equipmentStatusAwareness)
 
-				go func(equipmentStatusAwareness *models.EquipmentStatusAwareness) {
-					socketServer.wsClients.EquipmentStatusBroadcast <- equipmentStatusAwareness
-				}(&equipmentStatusAwareness)
+				// 跟踪每个设备的连接情况
+				socketServer.socketClients.equipmentMembers[conn] = equipmentStatusAwareness.EquipmentID
+
+				// 将每个设备的状态信息合并到状态流EquipmentStatusStream中，以设备ID作区分
+				socketServer.wsClients.EquipmentStatusStream.StatusStream[equipmentStatusAwareness.EquipmentID] = equipmentStatusAwareness
+
+				//go func(equipmentStatusAwareness *models.EquipmentStatusAwareness) {
+				//	socketServer.wsClients.EquipmentStatusBroadcast <- equipmentStatusAwareness
+				//}(&equipmentStatusAwareness)
 			}
 		}
 	}

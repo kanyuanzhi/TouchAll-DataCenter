@@ -51,7 +51,8 @@ func (config *Config) GetSocketConfig() interface{} {
 	return port
 }
 
-func (config *Config) GetWebSocketConfig() interface{} {
+func (config *Config) GetWebSocketConfig() (interface{}, interface{}) {
 	port := config.GetValue("websocket_server.port")
-	return port
+	pushInterval := config.GetValue("websocket_server.push_interval")
+	return port, pushInterval
 }

@@ -9,6 +9,7 @@ import (
 func main() {
 	wsClients := websocket.NewWsClients()
 	go wsClients.Start()
+	//go wsClients.Status()
 
 	wsServer := websocket.NewWsServer(wsClients)
 	go wsServer.Start()

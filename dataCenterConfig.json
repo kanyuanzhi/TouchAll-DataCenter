@@ -3,7 +3,8 @@
     "port": "9090"
   },
   "websocket_server": {
-    "port": "9091"
+    "port": "9091",
+    "push_interval": 1
   },
   "mongodb": {
     "host": "119.28.16.179",

@@ -126,6 +126,7 @@ type NetworkStatus struct {
 	NetworkReceiveGigabytes float32 `json:"network_receive_gigabytes"`
 }
 
+// 响应设备端推送的设备基本信息
 type ResponseForEquipmentBasicInformation struct {
 	DataType      int  `json:"data_type"`
 	EquipmentID   int  `json:"equipment_id"`
@@ -137,5 +138,18 @@ type ResponseForEquipmentBasicInformation struct {
 func NewResponseForEquipmentBasicInformation() *ResponseForEquipmentBasicInformation {
 	return &ResponseForEquipmentBasicInformation{
 		DataType: 32,
+	}
+}
+
+// websocket推送流
+type EquipmentStatusStream struct {
+	DataType     int                              `json:"data_type"`
+	StatusStream map[int]EquipmentStatusAwareness `json:"status_stream"`
+}
+
+func NewEquipmentStatusStream() *EquipmentStatusStream {
+	return &EquipmentStatusStream{
+		DataType:     33,
+		StatusStream: make(map[int]EquipmentStatusAwareness),
 	}
 }
