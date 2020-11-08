@@ -1,11 +1,11 @@
 package socket
 
 import (
-	"dataCenter/config"
-	"dataCenter/models"
-	"dataCenter/protocal"
-	"dataCenter/utils"
-	"dataCenter/websocket"
+	"TouchAll-DataCenter/config"
+	"TouchAll-DataCenter/models"
+	"TouchAll-DataCenter/protocal"
+	"TouchAll-DataCenter/utils"
+	"TouchAll-DataCenter/websocket"
 	"encoding/json"
 	"fmt"
 	"log"

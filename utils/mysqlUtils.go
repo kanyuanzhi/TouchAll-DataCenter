@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"dataCenter/dbDrivers"
-	"dataCenter/models"
+	"TouchAll-DataCenter/dbDrivers"
+	"TouchAll-DataCenter/models"
 	"errors"
 	"gorm.io/gorm"
 )
