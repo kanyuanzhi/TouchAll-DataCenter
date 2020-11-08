@@ -1,7 +1,7 @@
 package timer
 
 import (
-	"dataCenter/utils"
+	"TouchAll-DataCenter/utils"
 	"time"
 )
 

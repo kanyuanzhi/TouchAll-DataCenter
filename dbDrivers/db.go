@@ -1,6 +1,6 @@
 package dbDrivers
 
-import "dataCenter/config"
+import "TouchAll-DataCenter/config"
 
 func init() {
 	config := config.NewConfig()

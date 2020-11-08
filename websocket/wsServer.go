@@ -1,8 +1,8 @@
 package websocket
 
 import (
-	"dataCenter/config"
-	"dataCenter/models"
+	"TouchAll-DataCenter/config"
+	"TouchAll-DataCenter/models"
 	"encoding/json"
 	"flag"
 	"github.com/gorilla/websocket"

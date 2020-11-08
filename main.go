@@ -1,8 +1,8 @@
 package main
 
 import (
-	"dataCenter/socket"
-	"dataCenter/websocket"
+	"TouchAll-DataCenter/socket"
+	"TouchAll-DataCenter/websocket"
 	"time"
 )
 

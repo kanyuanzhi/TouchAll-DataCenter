@@ -1,7 +1,7 @@
 package dbDrivers
 
 import (
-	"dataCenter/config"
+	"TouchAll-DataCenter/config"
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
