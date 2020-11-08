@@ -69,7 +69,7 @@ func (socketServer *SocketServer) handleConn(conn net.Conn) {
 		n, err := conn.Read(buffer)
 		if err != nil {
 			// 设备与数据中心连接断开后，依据连接conn找到设备ID，并删除设备状态流中该设备的状态信息
-			delete(socketServer.wsClients.EquipmentStatusStream.StatusStream, socketServer.socketClients.equipmentMembers[conn])
+			socketServer.wsClients.EquipmentStatusStream.StatusStreamSyncMap.Delete(socketServer.socketClients.equipmentMembers[conn])
 			delete(socketServer.socketClients.members, conn)
 			delete(socketServer.socketClients.equipmentMembers, conn)
 			fmt.Println(err.Error())
@@ -130,7 +130,7 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 						// 若注册则更新并返回数据库中注册ID、验证状态，若未注册则随机注册一个ID并与"未验证"状态一起返回至设备处理,
 						// 设备将该ID添加至发送到数据中心的状态信息中，若没有此ID目前将禁止设备发送状态
 						var equipmentBasicInformationAwareness models.EquipmentBasicInformationAwareness
-						json.Unmarshal(data, &equipmentBasicInformationAwareness)
+						_ = json.Unmarshal(data, &equipmentBasicInformationAwareness)
 						isEquipmentVisited, equipmentID, authenticated := utils.IsEquipmentNetworkMacExisted(equipmentBasicInformationAwareness.Network.NetworkMac)
 						if isEquipmentVisited {
 							responseForEquipmentBasicInformation.EquipmentID = equipmentID
@@ -168,11 +168,11 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 			case 31:
 				// EquipmentStatusAwareness，设备状态信息，存入Mongodb并汇总至设备状态流EquipmentStatusStream
 				var equipmentStatusAwareness models.EquipmentStatusAwareness
-				json.Unmarshal(data, &equipmentStatusAwareness)
+				_ = json.Unmarshal(data, &equipmentStatusAwareness)
 
 				go func(equipmentStatusAwareness *models.EquipmentStatusAwareness) {
 					if socketServer.useMongodb == true {
-						utils.InsertOneRecord(equipmentStatusAwareness, "equipment_awareness")
+						_, _ = utils.InsertOneRecord(equipmentStatusAwareness, "equipment_awareness")
 					}
 				}(&equipmentStatusAwareness)
 
@@ -180,7 +180,9 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 				socketServer.socketClients.equipmentMembers[conn] = equipmentStatusAwareness.EquipmentID
 
 				// 将每个设备的状态信息合并到状态流EquipmentStatusStream中，以设备ID作区分
-				socketServer.wsClients.EquipmentStatusStream.StatusStream[equipmentStatusAwareness.EquipmentID] = equipmentStatusAwareness
+				//socketServer.wsClients.EquipmentStatusStream.StatusStream[equipmentStatusAwareness.EquipmentID] = equipmentStatusAwareness
+				// 使用并发安全的字典类型sync.Map
+				socketServer.wsClients.EquipmentStatusStream.StatusStreamSyncMap.Store(equipmentStatusAwareness.EquipmentID, equipmentStatusAwareness)
 
 				//go func(equipmentStatusAwareness *models.EquipmentStatusAwareness) {
 				//	socketServer.wsClients.EquipmentStatusBroadcast <- equipmentStatusAwareness

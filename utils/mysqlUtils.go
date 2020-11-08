@@ -24,10 +24,11 @@ func IsEquipmentIDExisted(id int) bool {
 	return true
 }
 
-// 更新设备信息
+// 更新设备信息（设备初始连接数据中心时发送设备基本信息，自动）
 func UpdateEquipmentBasicInformation(equipmentJson models.EquipmentBasicInformationAwareness) bool {
 	equipmentMysql := models.TransformEquipmentFromJsonToMysql(&equipmentJson)
-	result := mysqlDB.Model(&equipmentMysql).Omit("id", "data_type", "equipment_id", "network_mac_1", "network_mac_2", "authenticated").Updates(equipmentMysql)
+	result := mysqlDB.Model(&equipmentMysql).Omit("id", "data_type", "equipment_id", "network_mac_1",
+		"network_mac_2", "network_ip_2", "network_card_2", "authenticated").Updates(equipmentMysql)
 	if result.Error != nil {
 		panic(result.Error.Error())
 		return false

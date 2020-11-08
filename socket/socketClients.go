@@ -8,7 +8,7 @@ import (
 
 type SocketClients struct {
 	members          map[net.Conn]bool
-	equipmentMembers map[net.Conn]int
+	equipmentMembers map[net.Conn]int // 设备与数据中心的连接到设备ID的映射
 }
 
 func NewSocketClients() *SocketClients {

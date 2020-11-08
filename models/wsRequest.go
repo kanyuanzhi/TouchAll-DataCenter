@@ -23,8 +23,13 @@ type WsRequestForEquipmentStatus struct {
 	NetworkMac  string `json:"network_mac" bson:"network_mac"`
 }
 
-// 用户端发出的对设备组的websocket请求
+// 用户端发出的对设备组状态的websocket请求
 type WsRequestForEquipmentGroupStatus struct {
 	WsRequest
 	EquipmentIDs []int `json:"equipment_ids" bson:"equipment_ids"`
+}
+
+// 用户端发出的对数据中心websocket连接状态的websocket请求
+type WsRequestForWsConnectionStatus struct {
+	WsRequest
 }

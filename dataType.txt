@@ -6,3 +6,5 @@ DataType:
 31: EquipmentStatusAwareness
 32: ResponseForEquipmentBasicInformation
 33: RequestForEquipmentStatusStream,EquipmentStatusStream
+
+40: WsConnectionInformation

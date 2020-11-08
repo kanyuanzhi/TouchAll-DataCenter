@@ -74,16 +74,21 @@ func (ws *WsServer) serveWs(w http.ResponseWriter, r *http.Request) {
 		json.Unmarshal(message, &requestForPerson)
 		requestForPerson.Conn = conn
 		ws.wsClients.requestForPerson <- &requestForPerson
-	case 31:
-		var requestForEquipmentStatus models.WsRequestForEquipmentStatus
-		json.Unmarshal(message, &requestForEquipmentStatus)
-		requestForEquipmentStatus.Conn = conn
-		ws.wsClients.requestForEquipmentStatus <- &requestForEquipmentStatus
+	//case 31:
+	//	var requestForEquipmentStatus models.WsRequestForEquipmentStatus
+	//	json.Unmarshal(message, &requestForEquipmentStatus)
+	//	requestForEquipmentStatus.Conn = conn
+	//	ws.wsClients.requestForEquipmentStatus <- &requestForEquipmentStatus
 	case 33:
 		var requestForEquipmentGroupStatus models.WsRequestForEquipmentGroupStatus
 		json.Unmarshal(message, &requestForEquipmentGroupStatus)
 		requestForEquipmentGroupStatus.Conn = conn
 		ws.wsClients.requestForEquipmentGroupStatus <- &requestForEquipmentGroupStatus
+	case 40:
+		var requestForWsConnectionStatus models.WsRequestForWsConnectionStatus
+		json.Unmarshal(message, &requestForWsConnectionStatus)
+		requestForWsConnectionStatus.Conn = conn
+		ws.wsClients.requestForWsConnectionStatus <- &requestForWsConnectionStatus
 	default:
 		break
 	}
