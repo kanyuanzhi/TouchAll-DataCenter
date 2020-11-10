@@ -86,6 +86,9 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 			// 由于此时不知道数据类型，不能转为相应的结构体，因此需要先把json转map，以获取data_type
 			var m map[string]interface{}
 			json.Unmarshal(data, &m)
+			if m["data_type"] == nil {
+				return
+			}
 			switch int(m["data_type"].(float64)) {
 			case 10:
 				// PeopleAwareness
@@ -121,14 +124,15 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 
 				// 响应给设备的信息
 				responseForEquipmentBasicInformation := models.NewResponseForEquipmentBasicInformation()
+				responseForEquipmentBasicInformation.DataType = 32
 				responseForEquipmentBasicInformation.UseMysql = socketServer.useMysql
 				responseForEquipmentBasicInformation.UseMongodb = socketServer.useMongodb
 
 				go func(data []byte, conn net.Conn, responseForEquipmentBasicInformation *models.ResponseForEquipmentBasicInformation) {
 					if socketServer.useMysql == true {
-						//todo:根据network_mac查询是否在数据库mysql中注册，
+						// 根据network_mac查询是否在数据库mysql中注册，
 						// 若注册则更新并返回数据库中注册ID、验证状态，若未注册则随机注册一个ID并与"未验证"状态一起返回至设备处理,
-						// 设备将该ID添加至发送到数据中心的状态信息中，若没有此ID目前将禁止设备发送状态
+						// 设备将该ID添加至发送到数据中心的状态信息中
 						var equipmentBasicInformationAwareness models.EquipmentBasicInformationAwareness
 						_ = json.Unmarshal(data, &equipmentBasicInformationAwareness)
 						isEquipmentVisited, equipmentID, authenticated := utils.IsEquipmentNetworkMacExisted(equipmentBasicInformationAwareness.Network.NetworkMac)
@@ -159,8 +163,8 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 						responseForEquipmentBasicInformation.EquipmentID = 0
 						responseForEquipmentBasicInformation.Authenticated = 0 // 由数据中心自动注册的设备为未验证设备
 					}
-					responseToEquipment, _ := json.Marshal(responseForEquipmentBasicInformation)
-					_, err := conn.Write(responseToEquipment)
+					responseForEquipment, _ := json.Marshal(responseForEquipmentBasicInformation)
+					_, err := conn.Write(responseForEquipment)
 					if err != nil {
 						log.Println(err.Error())
 					}
@@ -184,9 +188,47 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 				// 使用并发安全的字典类型sync.Map
 				socketServer.wsClients.EquipmentStatusStream.StatusStreamSyncMap.Store(equipmentStatusAwareness.EquipmentID, equipmentStatusAwareness)
 
-				//go func(equipmentStatusAwareness *models.EquipmentStatusAwareness) {
-				//	socketServer.wsClients.EquipmentStatusBroadcast <- equipmentStatusAwareness
-				//}(&equipmentStatusAwareness)
+			//go func(equipmentStatusAwareness *models.EquipmentStatusAwareness) {
+			//	socketServer.wsClients.EquipmentStatusBroadcast <- equipmentStatusAwareness
+			//}(&equipmentStatusAwareness)
+			case 50:
+				responseForCamera := models.NewResponseForCamera()
+				responseForCamera.DataType = 51
+				responseForCamera.UseMysql = socketServer.useMysql
+				responseForCamera.UseMongodb = socketServer.useMongodb
+				go func(data []byte, conn net.Conn, responseForCamera *models.ResponseForCamera) {
+					if socketServer.useMysql {
+						var camera models.Camera
+						_ = json.Unmarshal(data, &camera)
+						isCameraVisited, cameraID, authenticated := utils.IsCameraHostExisted(camera.CameraHost)
+						if isCameraVisited {
+							responseForCamera.CameraID = cameraID
+							responseForCamera.Authenticated = authenticated
+						} else {
+							// 此时监控摄像机未在前端页面注册，交由数据中心自动注册
+							rand.Seed(time.Now().Unix())
+							temporalCameraID := rand.Intn(65535)
+							for {
+								if !utils.IsEquipmentIDExisted(temporalCameraID) {
+									break
+								} else {
+									temporalCameraID = rand.Intn(65535)
+								}
+							}
+							responseForCamera.CameraID = temporalCameraID
+							responseForCamera.Authenticated = 0
+							camera.CameraID = temporalCameraID
+							utils.InsertCamera(camera)
+						}
+						responseForCamera, _ := json.Marshal(responseForCamera)
+						_, err := conn.Write(responseForCamera)
+						if err != nil {
+							log.Println(err.Error())
+						}
+					}
+				}(data, conn, responseForCamera)
+			default:
+				return
 			}
 		}
 	}

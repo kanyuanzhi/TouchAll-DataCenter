@@ -9,7 +9,7 @@ import (
 type EquipmentBasicInformationAwarenessMysql struct {
 	gorm.Model
 	DataType       int       `json:"data_type" db:"data_type"`
-	EquipmentID    int       `json:"equipment_id" db:"equipment_id" gorm:"primaryKey;autoIncrement:false"`
+	EquipmentID    int       `json:"equipment_id" db:"equipment_id" gorm:"index"`
 	EquipmentType  int       `json:"equipment_type"`
 	EquipmentGroup int       `json:"equipment_group"`
 	OperateSystem  string    `json:"operate_system" db:"operate_system"`
@@ -32,6 +32,7 @@ type EquipmentBasicInformationAwarenessMysql struct {
 	Authenticated  int       `json:"authenticated" db:"authenticated"`
 }
 
+// EquipmentBasicInformationAwarenessMysql结构体对应mysql数据库中的equipment表
 func (EquipmentBasicInformationAwarenessMysql) TableName() string {
 	return "equipment"
 }

@@ -27,7 +27,7 @@ func IsEquipmentIDExisted(id int) bool {
 // 更新设备信息（设备初始连接数据中心时发送设备基本信息，自动）
 func UpdateEquipmentBasicInformation(equipmentJson models.EquipmentBasicInformationAwareness) bool {
 	equipmentMysql := models.TransformEquipmentFromJsonToMysql(&equipmentJson)
-	result := mysqlDB.Model(&equipmentMysql).Omit("id", "data_type", "equipment_id", "network_mac_1",
+	result := mysqlDB.Model(&equipmentMysql).Where("equipment_id=?", equipmentMysql.EquipmentID).Omit("id", "data_type", "equipment_id", "network_mac_1",
 		"network_mac_2", "network_ip_2", "network_card_2", "authenticated").Updates(equipmentMysql)
 	if result.Error != nil {
 		panic(result.Error.Error())
@@ -60,4 +60,29 @@ func IsEquipmentNetworkMacExisted(mac string) (bool, int, int) {
 		}
 	}
 	return true, equipment.EquipmentID, equipment.Authenticated
+}
+
+// 判断监控摄像机地址是否已注册
+func IsCameraHostExisted(host string) (bool, int, int) {
+	var camera models.Camera
+	result := mysqlDB.Select("camera_id").Where("camera_host=?", host).First(&camera)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return false, 0, 0
+		} else {
+			panic(result.Error.Error())
+			return false, 0, 0
+		}
+	}
+	return true, camera.CameraID, camera.Authenticated
+}
+
+// 新建监控摄像机信息
+func InsertCamera(camera models.Camera) bool {
+	result := mysqlDB.Create(&camera)
+	if result.Error != nil {
+		panic(result.Error.Error())
+		return false
+	}
+	return true
 }

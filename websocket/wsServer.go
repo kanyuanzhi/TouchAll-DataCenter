@@ -62,7 +62,9 @@ func (ws *WsServer) serveWs(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("write errro: %s", err)
 	}
-
+	if m["request_type"] == nil {
+		return
+	}
 	switch int(m["request_type"].(float64)) {
 	case 10:
 		var requestForPeople models.WsRequestForPeople
@@ -90,6 +92,6 @@ func (ws *WsServer) serveWs(w http.ResponseWriter, r *http.Request) {
 		requestForWsConnectionStatus.Conn = conn
 		ws.wsClients.requestForWsConnectionStatus <- &requestForWsConnectionStatus
 	default:
-		break
+		return
 	}
 }

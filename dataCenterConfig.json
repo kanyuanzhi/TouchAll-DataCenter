@@ -15,7 +15,7 @@
     "use": false
   },
   "mysql": {
-    "host": "119.28.16.179",
+    "host": "115.159.151.130",
     "port": "3306",
     "username": "root",
     "password": "123456",
