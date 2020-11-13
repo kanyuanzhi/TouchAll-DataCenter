@@ -192,44 +192,78 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 			//	socketServer.wsClients.EquipmentStatusBroadcast <- equipmentStatusAwareness
 			//}(&equipmentStatusAwareness)
 			case 50:
-				responseForCamera := models.NewResponseForCamera()
-				responseForCamera.DataType = 51
-				responseForCamera.UseMysql = socketServer.useMysql
-				responseForCamera.UseMongodb = socketServer.useMongodb
-				go func(data []byte, conn net.Conn, responseForCamera *models.ResponseForCamera) {
-					if socketServer.useMysql {
-						var camera models.Camera
-						_ = json.Unmarshal(data, &camera)
-						isCameraVisited, cameraID, authenticated := utils.IsCameraHostExisted(camera.CameraHost)
-						if isCameraVisited {
-							responseForCamera.CameraID = cameraID
-							responseForCamera.Authenticated = authenticated
-						} else {
-							// 此时监控摄像机未在前端页面注册，交由数据中心自动注册
-							rand.Seed(time.Now().Unix())
-							temporalCameraID := rand.Intn(65535)
-							for {
-								if !utils.IsEquipmentIDExisted(temporalCameraID) {
-									break
-								} else {
-									temporalCameraID = rand.Intn(65535)
-								}
-							}
-							responseForCamera.CameraID = temporalCameraID
-							responseForCamera.Authenticated = 0
-							camera.CameraID = temporalCameraID
-							utils.InsertCamera(camera)
-						}
-						responseForCamera, _ := json.Marshal(responseForCamera)
-						_, err := conn.Write(responseForCamera)
-						if err != nil {
-							log.Println(err.Error())
-						}
-					}
-				}(data, conn, responseForCamera)
+				// camera
+				go socketServer.handleCamera(data, conn, 50)
+			case 53:
+				go socketServer.handleCamera(data, conn, 53)
 			default:
 				return
 			}
+		}
+	}
+}
+
+func (socketServer *SocketServer) handleCamera(data []byte, conn net.Conn, dataType int) {
+	if socketServer.useMysql {
+		var camera models.Camera
+		var aiCamera models.AICamera
+
+		if dataType == 50 {
+			_ = json.Unmarshal(data, &camera)
+		} else {
+			_ = json.Unmarshal(data, &aiCamera)
+		}
+
+		responseForCamera := models.NewResponseForCamera()
+		responseForCamera.DataType = 51
+		responseForCamera.UseMysql = socketServer.useMysql
+		responseForCamera.UseMongodb = socketServer.useMongodb
+
+		var isCameraVisited bool
+		var cameraID int
+		var authenticated int
+		var isCameraIDExisted bool
+
+		if dataType == 50 {
+			isCameraVisited, cameraID, authenticated = utils.IsCameraHostExisted(camera.CameraHost)
+		} else {
+			isCameraVisited, cameraID, authenticated = utils.IsAICameraHostExisted(aiCamera.CameraHost)
+		}
+
+		if isCameraVisited {
+			responseForCamera.CameraID = cameraID
+			responseForCamera.Authenticated = authenticated
+		} else {
+			// 此时监控摄像机未在前端页面注册，交由数据中心自动注册
+			rand.Seed(time.Now().Unix())
+			temporalCameraID := rand.Intn(65535)
+			for {
+				if dataType == 50 {
+					isCameraIDExisted = utils.IsCameraIDExisted(temporalCameraID)
+				} else {
+					isCameraIDExisted = utils.IsAICameraIDExisted(temporalCameraID)
+				}
+
+				if !isCameraIDExisted {
+					break
+				} else {
+					temporalCameraID = rand.Intn(65535)
+				}
+			}
+			responseForCamera.CameraID = temporalCameraID
+			responseForCamera.Authenticated = 0
+			if dataType == 50 {
+				camera.CameraID = temporalCameraID
+				utils.InsertCamera(camera)
+			} else {
+				aiCamera.CameraID = temporalCameraID
+				utils.InsertAICamera(aiCamera)
+			}
+		}
+		responseForCameraBytes, _ := json.Marshal(responseForCamera)
+		_, err := conn.Write(responseForCameraBytes)
+		if err != nil {
+			log.Println(err.Error())
 		}
 	}
 }

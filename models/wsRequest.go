@@ -9,7 +9,8 @@ type WsRequest struct {
 
 type WsRequestForPeople struct {
 	WsRequest
-	Camera int `json:"camera" bson:"camera"`
+	CameraID         int `json:"camera_id" bson:"camera_id"`
+	PreviousCameraID int `json:"previous_camera_id"`
 }
 
 type WsRequestForPerson struct {

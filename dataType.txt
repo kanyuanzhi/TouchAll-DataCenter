@@ -12,5 +12,5 @@ DataType(RequestType):
 40: WsConnectionInformation
 
 50: Camera
-51: ResponseForCamera
-52: open a camera websocket
+51: ResponseForCamera,ResponseForAICamera
+53: AICamera

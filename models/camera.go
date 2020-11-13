@@ -12,6 +12,10 @@ type Camera struct {
 	Authenticated int    `json:"authenticated"`
 }
 
+type AICamera struct {
+	Camera
+}
+
 type ResponseForCamera struct {
 	DataType      int  `json:"data_type"`
 	CameraID      int  `json:"camera_id"`

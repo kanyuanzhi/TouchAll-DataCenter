@@ -91,10 +91,10 @@ func (wsClients *WsClients) Start() {
 				}
 
 			case wsRequest := <-wsClients.requestForPeople:
-				if _, has := wsClients.peopleMembers[wsRequest.Camera]; !has {
-					wsClients.peopleMembers[wsRequest.Camera] = make(map[*websocket.Conn]bool)
+				if _, has := wsClients.peopleMembers[wsRequest.CameraID]; !has {
+					wsClients.peopleMembers[wsRequest.CameraID] = make(map[*websocket.Conn]bool)
 				}
-				wsClients.peopleMembers[wsRequest.Camera][wsRequest.Conn] = true
+				wsClients.peopleMembers[wsRequest.CameraID][wsRequest.Conn] = true
 			case wsRequest := <-wsClients.requestForPerson:
 				if _, has := wsClients.personMembers[wsRequest.Name]; !has {
 					wsClients.personMembers[wsRequest.Name] = make(map[*websocket.Conn]bool)
@@ -127,7 +127,7 @@ func (wsClients *WsClients) Start() {
 		for {
 			select {
 			case message := <-wsClients.PeopleBroadcast:
-				if members, has := wsClients.peopleMembers[message.Camera]; has {
+				if members, has := wsClients.peopleMembers[message.CameraID]; has {
 					data, _ := json.Marshal(message)
 					for member := range members {
 						go func(member *websocket.Conn) {
@@ -182,33 +182,6 @@ func (wsClients *WsClients) Start() {
 		<-t.C
 		go wsClients.pushEquipmentStatus()
 		go wsClients.pushWsConnectionStatus()
-		//for wsRequestForEquipmentGroupStatus := range wsClients.equipmentGroupStatusIndividualMembers {
-		//	go func(wsRequestForEquipmentGroupStatus *models.WsRequestForEquipmentGroupStatus) {
-		//		wg := sync.WaitGroup{}
-		//		splitEquipmentStatusStream := models.NewEquipmentStatusStream()
-		//		for _, equipmentID := range wsRequestForEquipmentGroupStatus.EquipmentIDs {
-		//			go func(equipmentID int) {
-		//				wg.Add(1)
-		//				if equipmentStatusAwareness, has := wsClients.EquipmentStatusStream.StatusStreamSyncMap.Load(equipmentID); has {
-		//					splitEquipmentStatusStream.StatusStream[equipmentID] = equipmentStatusAwareness.(models.EquipmentStatusAwareness)
-		//					//splitEquipmentStatusStream.StatusStreamSyncMap.Store(equipmentID, equipmentStatusAwareness)
-		//				}
-		//				//if equipmentStatusAwareness, has := wsClients.EquipmentStatusStream.StatusStream[equipmentID]; has {
-		//				//	splitEquipmentStatusStream.StatusStream[equipmentID] = equipmentStatusAwareness
-		//				//}
-		//				wg.Done()
-		//			}(equipmentID)
-		//		}
-		//		wg.Wait()
-		//		data, _ := json.Marshal(splitEquipmentStatusStream)
-		//		err := wsRequestForEquipmentGroupStatus.Conn.WriteMessage(websocket.TextMessage, data)
-		//		if err != nil {
-		//			log.Printf("write errro: %s", err)
-		//			wsRequestForEquipmentGroupStatus.Conn.Close()
-		//			delete(wsClients.equipmentGroupStatusIndividualMembers, wsRequestForEquipmentGroupStatus)
-		//		}
-		//	}(wsRequestForEquipmentGroupStatus)
-		//}
 	}
 }
 

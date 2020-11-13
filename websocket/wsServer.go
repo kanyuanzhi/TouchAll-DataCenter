@@ -69,6 +69,12 @@ func (ws *WsServer) serveWs(w http.ResponseWriter, r *http.Request) {
 	case 10:
 		var requestForPeople models.WsRequestForPeople
 		json.Unmarshal(message, &requestForPeople)
+		if previousCameraID := requestForPeople.PreviousCameraID; previousCameraID != 0 {
+			delete(ws.wsClients.peopleMembers[previousCameraID], conn)
+			if len(ws.wsClients.peopleMembers[previousCameraID]) == 0 {
+				delete(ws.wsClients.peopleMembers, previousCameraID)
+			}
+		}
 		requestForPeople.Conn = conn
 		ws.wsClients.requestForPeople <- &requestForPeople
 	case 11:

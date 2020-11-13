@@ -77,9 +77,64 @@ func IsCameraHostExisted(host string) (bool, int, int) {
 	return true, camera.CameraID, camera.Authenticated
 }
 
+// 判断监控摄像机ID是否已注册
+func IsCameraIDExisted(id int) bool {
+	var camera models.Camera
+	result := mysqlDB.Select("id").Where("camera_id=?", id).First(&camera)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return false
+		} else {
+			panic(result.Error.Error())
+			return false
+		}
+	}
+	return true
+}
+
 // 新建监控摄像机信息
 func InsertCamera(camera models.Camera) bool {
 	result := mysqlDB.Create(&camera)
+	if result.Error != nil {
+		panic(result.Error.Error())
+		return false
+	}
+	return true
+}
+
+// 判断AI监控摄像机地址是否已注册
+func IsAICameraHostExisted(host string) (bool, int, int) {
+	var aiCamera models.AICamera
+	result := mysqlDB.Select("camera_id").Where("camera_host=?", host).First(&aiCamera)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return false, 0, 0
+		} else {
+			panic(result.Error.Error())
+			return false, 0, 0
+		}
+	}
+	return true, aiCamera.CameraID, aiCamera.Authenticated
+}
+
+// 判断AI监控摄像机ID是否已注册
+func IsAICameraIDExisted(id int) bool {
+	var aiCamera models.AICamera
+	result := mysqlDB.Select("id").Where("camera_id=?", id).First(&aiCamera)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return false
+		} else {
+			panic(result.Error.Error())
+			return false
+		}
+	}
+	return true
+}
+
+// 新建AI监控摄像机信息
+func InsertAICamera(aiCamera models.AICamera) bool {
+	result := mysqlDB.Create(&aiCamera)
 	if result.Error != nil {
 		panic(result.Error.Error())
 		return false
