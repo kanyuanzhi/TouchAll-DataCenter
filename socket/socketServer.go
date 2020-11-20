@@ -117,8 +117,10 @@ func (socketServer *SocketServer) reader(readerChannel chan []byte, conn net.Con
 				// PersonAwareness，在PeopleAwareness中已处理
 				continue
 			case 20:
-				// EnvironmentAwareness
-				continue
+				// Environment
+				var environment models.Environment
+				_ = json.Unmarshal(data, &environment)
+				socketServer.wsClients.EnvironmentStream.EnvironmentSyncMap.Store(environment.SensorID, environment)
 			case 30:
 				// EquipmentBasicInformationAwareness，设备基本信息，不做推送，只更新数据库
 

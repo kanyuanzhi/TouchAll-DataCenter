@@ -82,6 +82,11 @@ func (ws *WsServer) serveWs(w http.ResponseWriter, r *http.Request) {
 		json.Unmarshal(message, &requestForPerson)
 		requestForPerson.Conn = conn
 		ws.wsClients.requestForPerson <- &requestForPerson
+	case 20:
+		var requestForEnvironment models.WsRequestForEnvironment
+		json.Unmarshal(message, &requestForEnvironment)
+		requestForEnvironment.Conn = conn
+		ws.wsClients.requestForEnvironment <- &requestForEnvironment
 	//case 31:
 	//	var requestForEquipmentStatus models.WsRequestForEquipmentStatus
 	//	json.Unmarshal(message, &requestForEquipmentStatus)

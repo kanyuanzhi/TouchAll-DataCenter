@@ -34,3 +34,9 @@ type WsRequestForEquipmentGroupStatus struct {
 type WsRequestForWsConnectionStatus struct {
 	WsRequest
 }
+
+// 用户端发出的对环境状态的websocket请求
+type WsRequestForEnvironment struct {
+	WsRequest
+	SensorIDs []int `json:"sensor_ids" bson:"sensor_ids"`
+}

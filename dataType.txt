@@ -2,7 +2,8 @@ DataType(RequestType):
 10: PeopleAwareness
 11: PersonAwareness
 
-20: EnvironmentAwareness
+20: Environment
+21: RequestForEnvironmentStream, EnvironmentStream
 
 30: EquipmentBasicInformationAwareness
 31: EquipmentStatusAwareness

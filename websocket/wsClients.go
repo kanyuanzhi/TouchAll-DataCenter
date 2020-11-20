@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"sort"
-	"sync"
 	"time"
 )
 
@@ -17,11 +16,11 @@ type WsClients struct {
 	Register   chan *websocket.Conn
 	Unregister chan *websocket.Conn
 
-	requestForPeople chan *models.WsRequestForPeople
-	requestForPerson chan *models.WsRequestForPerson
-	//requestForEquipmentStatus    chan *models.WsRequestForEquipmentStatus
+	requestForPeople               chan *models.WsRequestForPeople
+	requestForPerson               chan *models.WsRequestForPerson
 	requestForWsConnectionStatus   chan *models.WsRequestForWsConnectionStatus
 	requestForEquipmentGroupStatus chan *models.WsRequestForEquipmentGroupStatus // 对设备组的请求
+	requestForEnvironment          chan *models.WsRequestForEnvironment          // 对环境组的请求
 
 	peopleMembers             map[int]map[*websocket.Conn]bool
 	personMembers             map[string]map[*websocket.Conn]bool
@@ -35,12 +34,19 @@ type WsClients struct {
 	// 对相同设备请求[equipmentID1, equipmentID2, ...]的md5值到[id1, id2, ...]的映射
 	equipmentGroupStatusMembersToIDs map[[md5.Size]byte][]int
 
+	environmentIndividualMembers map[*websocket.Conn]bool
+	environmentCombinedMembers   map[[md5.Size]byte]map[*websocket.Conn]bool
+	environmentMembersToIDs      map[[md5.Size]byte][]int
+
 	PeopleBroadcast          chan *models.PeopleAwareness
 	PersonBroadcast          chan []*models.PersonAwareness
 	EquipmentStatusBroadcast chan *models.EquipmentStatusAwareness
 
 	// 设备状态流，将所有在线设备发送的设备状态信息汇总，通过websocket推送
 	EquipmentStatusStream *models.EquipmentStatusStream
+
+	// 环境监测流
+	EnvironmentStream *models.EnvironmentStream
 
 	//
 	wsConnectionStatusStream *models.WsConnectionStatusStream
@@ -57,6 +63,7 @@ func NewWsClients() *WsClients {
 		//requestForEquipmentStatus:    make(chan *models.WsRequestForEquipmentStatus),
 		requestForWsConnectionStatus:   make(chan *models.WsRequestForWsConnectionStatus),
 		requestForEquipmentGroupStatus: make(chan *models.WsRequestForEquipmentGroupStatus),
+		requestForEnvironment:          make(chan *models.WsRequestForEnvironment),
 
 		peopleMembers:             make(map[int]map[*websocket.Conn]bool),
 		personMembers:             make(map[string]map[*websocket.Conn]bool),
@@ -66,11 +73,16 @@ func NewWsClients() *WsClients {
 		equipmentGroupStatusCombinedMembers:   make(map[[md5.Size]byte]map[*websocket.Conn]bool),
 		equipmentGroupStatusMembersToIDs:      make(map[[md5.Size]byte][]int),
 
+		environmentIndividualMembers: make(map[*websocket.Conn]bool),
+		environmentCombinedMembers:   make(map[[md5.Size]byte]map[*websocket.Conn]bool),
+		environmentMembersToIDs:      make(map[[md5.Size]byte][]int),
+
 		PeopleBroadcast:          make(chan *models.PeopleAwareness),
 		PersonBroadcast:          make(chan []*models.PersonAwareness),
 		EquipmentStatusBroadcast: make(chan *models.EquipmentStatusAwareness),
 
 		EquipmentStatusStream:    models.NewEquipmentStatusStream(),
+		EnvironmentStream:        models.NewEnvironmentStream(),
 		wsConnectionStatusStream: models.NewWsConnectionStatusStream(),
 	}
 }
@@ -84,11 +96,6 @@ func (wsClients *WsClients) Start() {
 			select {
 			case member := <-wsClients.Register:
 				wsClients.members[member] = true
-			case member := <-wsClients.Unregister:
-				if _, has := wsClients.members[member]; has {
-					wsClients.members[member] = false
-					_ = member.Close()
-				}
 
 			case wsRequest := <-wsClients.requestForPeople:
 				if _, has := wsClients.peopleMembers[wsRequest.CameraID]; !has {
@@ -120,7 +127,20 @@ func (wsClients *WsClients) Start() {
 				}
 				wsClients.equipmentGroupStatusCombinedMembers[key][wsRequest.Conn] = true
 				wsClients.equipmentGroupStatusMembersToIDs[key] = equipmentIDs
+
+			case wsRequest := <-wsClients.requestForEnvironment:
+				wsClients.environmentIndividualMembers[wsRequest.Conn] = true
+				sensorIDs := wsRequest.SensorIDs
+				sort.Ints(sensorIDs)
+				bytes, _ := json.Marshal(sensorIDs)
+				key := md5.Sum(bytes)
+				if _, has := wsClients.environmentCombinedMembers[key]; !has {
+					wsClients.environmentCombinedMembers[key] = make(map[*websocket.Conn]bool)
+				}
+				wsClients.environmentCombinedMembers[key][wsRequest.Conn] = true
+				wsClients.environmentMembersToIDs[key] = sensorIDs
 			}
+
 		}
 	}()
 	go func() {
@@ -182,6 +202,7 @@ func (wsClients *WsClients) Start() {
 		<-t.C
 		go wsClients.pushEquipmentStatus()
 		go wsClients.pushWsConnectionStatus()
+		go wsClients.pushEnvironment()
 	}
 }
 
@@ -191,20 +212,25 @@ func (wsClients *WsClients) pushEquipmentStatus() {
 		go func(key [md5.Size]byte) {
 			splitEquipmentStatusStream := models.NewEquipmentStatusStream()
 			equipmentIDs := wsClients.equipmentGroupStatusMembersToIDs[key]
-			wg := sync.WaitGroup{}
+			//wg := sync.WaitGroup{}
 			for _, id := range equipmentIDs {
-				wg.Add(1)
+				//wg.Add(1)
 				go func(id int) {
-					defer wg.Done()
+					//defer wg.Done()
 					if equipmentStatusAwareness, has := wsClients.EquipmentStatusStream.StatusStreamSyncMap.Load(id); has {
 						splitEquipmentStatusStream.StatusStream[id] = equipmentStatusAwareness.(models.EquipmentStatusAwareness)
 					}
 				}(id)
 			}
-			wg.Wait()
+			//wg.Wait()
 			data, _ := json.Marshal(splitEquipmentStatusStream)
 			for conn := range wsClients.equipmentGroupStatusCombinedMembers[key] {
 				go func(conn *websocket.Conn, data []byte, key [md5.Size]byte) {
+					defer func() {
+						if err := recover(); err != nil {
+							log.Println(err)
+						}
+					}()
 					err = conn.WriteMessage(websocket.TextMessage, data)
 					if err != nil {
 						log.Printf("write errro: %s", err)
@@ -219,6 +245,46 @@ func (wsClients *WsClients) pushEquipmentStatus() {
 					}
 				}(conn, data, key)
 			}
+		}(key)
+	}
+}
+
+func (wsClients *WsClients) pushEnvironment() {
+	var err error
+	for key := range wsClients.environmentCombinedMembers {
+		go func(key [md5.Size]byte) {
+			splitEnvironmentSteam := models.NewEnvironmentStream()
+			sensorIDs := wsClients.environmentMembersToIDs[key]
+			for _, id := range sensorIDs {
+				func(id int) {
+					if environment, has := wsClients.EnvironmentStream.EnvironmentSyncMap.Load(id); has {
+						splitEnvironmentSteam.Environment[id] = environment.(models.Environment)
+					}
+				}(id)
+			}
+			data, _ := json.Marshal(splitEnvironmentSteam)
+			for conn := range wsClients.environmentCombinedMembers[key] {
+				go func(conn *websocket.Conn, data []byte, key [md5.Size]byte) {
+					defer func() {
+						if err := recover(); err != nil {
+							log.Println(err)
+						}
+					}()
+					err = conn.WriteMessage(websocket.TextMessage, data)
+					if err != nil {
+						log.Printf("write errro: %s", err)
+						conn.Close()
+						delete(wsClients.members, conn)
+						delete(wsClients.environmentCombinedMembers[key], conn)
+						delete(wsClients.environmentIndividualMembers, conn)
+						if len(wsClients.environmentCombinedMembers[key]) == 0 {
+							delete(wsClients.environmentCombinedMembers, key)
+							delete(wsClients.environmentMembersToIDs, key)
+						}
+					}
+				}(conn, data, key)
+			}
+
 		}(key)
 	}
 }
